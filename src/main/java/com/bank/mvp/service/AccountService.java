@@ -54,7 +54,15 @@ public class AccountService {
             throw new InvalidAmountException("Account with this email already exists");
         }
 
-        String accountNumber = "ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String accountNumber;
+        if (request.getAccountNumber() != null && !request.getAccountNumber().trim().isEmpty()) {
+            accountNumber = request.getAccountNumber().trim();
+            if (accountRepository.findByAccountNumber(accountNumber).isPresent()) {
+                throw new InvalidAmountException("Account with this account number already exists");
+            }
+        } else {
+            accountNumber = "ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
 
         Account account = new Account(accountNumber, name, email, initialBalance);
         Account saved = accountRepository.save(account);

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Banking System MVP</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>Online Banking System</h1>
+            <p class="subtitle">Simple & Clean MVP Banking Portal</p>
+        </header>
+
+        <!-- Notification Banner -->
+        <div id="statusBanner" class="status-banner" style="display: none;">
+            <span id="statusText"></span>
+            <button type="button" class="close-btn" onclick="hideStatus()">&times;</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- 1. Create Account -->
+            <section class="card">
+                <h2>1. Create Account</h2>
+                <form id="createAccountForm">
+                    <div class="form-group">
+                        <label for="createName">Name <span class="required">*</span></label>
+                        <input type="text" id="createName" placeholder="e.g. John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="createEmail">Email <span class="required">*</span></label>
+                        <input type="email" id="createEmail" placeholder="e.g. john@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="createAccountNumber">Account Number</label>
+                        <input type="text" id="createAccountNumber" placeholder="e.g. ACC-1001 (optional)">
+                        <small class="helper-text">Leave blank to auto-generate</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="createInitialBalance">Initial Balance <span class="required">*</span></label>
+                        <input type="number" id="createInitialBalance" step="0.01" min="0" placeholder="e.g. 5000.00" required>
+                    </div>
+
+                    <button type="submit" id="createBtn" class="btn btn-primary">Create Account</button>
+                </form>
+            </section>
+
+            <!-- Right Column: Account Details, Deposit, Withdraw -->
+            <div class="details-and-actions">
+                <!-- 2. Account Details -->
+                <section class="card">
+                    <div class="card-header-row">
+                        <h2>2. Account Details</h2>
+                        <form id="fetchAccountForm" class="lookup-inline-form">
+                            <input type="number" id="lookupAccountId" placeholder="Account ID" min="1" required>
+                            <button type="submit" class="btn btn-secondary btn-sm">Load</button>
+                        </form>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Account ID</span>
+                            <span class="detail-value" id="detailAccountId">—</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value" id="detailName">—</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Account Number</span>
+                            <span class="detail-value" id="detailAccountNumber">—</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Balance</span>
+                            <span class="detail-value balance-value" id="detailBalance">—</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="operations-grid">
+                    <!-- 3. Deposit -->
+                    <section class="card">
+                        <h2>3. Deposit</h2>
+                        <form id="depositForm">
+                            <div class="form-group">
+                                <label for="depositAmount">Amount <span class="required">*</span></label>
+                                <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="e.g. 2000.00" required>
+                            </div>
+                            <button type="submit" id="depositBtn" class="btn btn-success">Deposit</button>
+                        </form>
+                    </section>
+
+                    <!-- 4. Withdraw -->
+                    <section class="card">
+                        <h2>4. Withdraw</h2>
+                        <form id="withdrawForm">
+                            <div class="form-group">
+                                <label for="withdrawAmount">Amount <span class="required">*</span></label>
+                                <input type="number" id="withdrawAmount" step="0.01" min="0.01" placeholder="e.g. 1000.00" required>
+                            </div>
+                            <button type="submit" id="withdrawBtn" class="btn btn-warning">Withdraw</button>
+                        </form>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Transaction History -->
+        <section class="card full-width">
+            <div class="card-header-row">
+                <h2>5. Transaction History</h2>
+                <button type="button" id="refreshTxBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentTransactions()">Refresh</button>
+            </div>
+
+            <div class="table-container">
+                <table class="transaction-table" id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody">
+                        <tr>
+                            <td colspan="5" class="empty-state">No account selected. Create or load an account to view transactions.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

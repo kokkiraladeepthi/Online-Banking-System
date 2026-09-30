@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class CreateAccountRequest {
 
@@ -14,6 +15,9 @@ public class CreateAccountRequest {
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
+
+    @Size(max = 20, message = "Account number must not exceed 20 characters")
+    private String accountNumber;
 
     @NotNull(message = "Initial balance is required")
     private BigDecimal initialBalance;
@@ -32,6 +36,14 @@ public class CreateAccountRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
     }
 
     public BigDecimal getInitialBalance() {

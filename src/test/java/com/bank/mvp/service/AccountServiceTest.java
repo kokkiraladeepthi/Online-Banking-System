@@ -85,4 +85,32 @@ class AccountServiceTest {
 
         assertThrows(InsufficientBalanceException.class, () -> accountService.withdraw(account.getId(), request));
     }
+
+    @Test
+    void shouldCreateAccountWithCustomAccountNumber() {
+        CreateAccountRequest request = new CreateAccountRequest();
+        request.setName("Jane Doe");
+        request.setEmail("jane@example.com");
+        request.setAccountNumber("ACC-CUSTOM-1");
+        request.setInitialBalance(new BigDecimal("500.00"));
+
+        AccountResponse response = accountService.createAccount(request);
+
+        assertNotNull(response.getId());
+        assertEquals("ACC-CUSTOM-1", response.getAccountNumber());
+        assertEquals("Jane Doe", response.getName());
+    }
+
+    @Test
+    void shouldRejectDuplicateAccountNumber() {
+        accountRepository.save(new Account("ACC-DUP", "User1", "user1@example.com", new BigDecimal("100.00")));
+
+        CreateAccountRequest request = new CreateAccountRequest();
+        request.setName("User2");
+        request.setEmail("user2@example.com");
+        request.setAccountNumber("ACC-DUP");
+        request.setInitialBalance(new BigDecimal("200.00"));
+
+        assertThrows(InvalidAmountException.class, () -> accountService.createAccount(request));
+    }
 }
