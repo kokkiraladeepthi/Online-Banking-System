@@ -1,6 +1,104 @@
 # Online Banking System (MVP)
 
-A simple, lightweight Online Banking MVP application built with **Spring Boot** and **MySQL/H2**, featuring a clean **HTML, CSS, and Vanilla JavaScript** frontend.
+A simple, lightweight Online Banking MVP application built with **Spring Boot** and **MySQL / Embedded H2**, featuring a clean **HTML, CSS, and Vanilla JavaScript** frontend.
+
+---
+
+## 🚀 How to Run the Project (Step-by-Step)
+
+Follow these simple steps to run and use the project on your machine:
+
+### 1. Prerequisites
+- **Java 17 or higher** installed (`java -version`)
+- A modern web browser (Chrome, Edge, Firefox, etc.)
+- Maven 3.8+ *(optional — not required if using the one-click script or VS Code)*
+
+---
+
+### 2. Start the Backend Server
+
+Choose **any one** of the following 3 options to start the application:
+
+#### Option 1: One-Click Startup (Easiest for Windows)
+Simply double-click the **`run.bat`** file located in the project root folder.  
+*(This runs the pre-packaged JAR file directly using Java).*
+
+---
+
+#### Option 2: Using Terminal / Command Prompt
+Open your terminal (PowerShell, Command Prompt, or Bash) in the project root folder and run:
+
+- **Using Java JAR (Fastest):**
+  ```bash
+  java -jar target/online-banking-mvp-0.0.1-SNAPSHOT.jar
+  ```
+- **Using Maven (Source code):**
+  ```bash
+  mvn spring-boot:run
+  ```
+
+---
+
+#### Option 3: Directly in Visual Studio Code
+1. Open the project folder in **VS Code**.
+2. In the Explorer, open:  
+   `src/main/java/com/bank/mvp/OnlineBankingMvpApplication.java`
+3. Click the **Run** button located above `public static void main` (or press **F5**).
+
+---
+
+### 3. Open the Frontend Application
+
+Once the terminal outputs:
+```
+Tomcat started on port 8080 (http) with context path '/'
+Started OnlineBankingMvpApplication ...
+```
+
+Open your web browser and go to:
+👉 **[http://localhost:8080/](http://localhost:8080/)**
+
+The clean MVP frontend will open, ready to:
+1. Create a new bank account.
+2. View account balance and details.
+3. Perform deposits.
+4. Perform withdrawals (with overdraft protection).
+5. View transaction logs in real time.
+
+---
+
+### 4. Database Setup & Configuration
+
+The application is pre-configured to run with **zero setup** using an embedded database in MySQL compatibility mode (`jdbc:h2:mem:bankdb;MODE=MySQL`).
+
+#### (Optional) H2 Database Web Console:
+- URL: **[http://localhost:8080/h2-console](http://localhost:8080/h2-console)**
+- JDBC URL: `jdbc:h2:mem:bankdb`
+- User Name: `sa`
+- Password: *(leave empty)*
+
+#### (Optional) Switching to your local MySQL Server:
+If you want to persist data to a local MySQL instance:
+1. Open `src/main/resources/application.properties`.
+2. Comment out the H2 settings and uncomment the MySQL section:
+   ```properties
+   spring.datasource.url=jdbc:mysql://localhost:3306/online_banking_mvp?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+   spring.datasource.username=root
+   spring.datasource.password=YOUR_MYSQL_PASSWORD
+   spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+   spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+   ```
+3. Restart the application.
+
+---
+
+## 📋 Table of Contents
+1. [Objective](#1-objective)
+2. [Technology Stack](#2-technology-stack)
+3. [Core Features](#3-core-features)
+4. [Database Schema](#4-database-schema)
+5. [API Endpoints](#5-api-endpoints)
+6. [How to Test Using Postman](#6-how-to-test-using-postman)
 
 ---
 
@@ -19,7 +117,7 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 
 - **Backend:** Java 17+, Spring Boot 3.3.x, Spring Data JPA, Hibernate, Bean Validation (Jakarta)
 - **Database:** MySQL 8.x / Embedded H2 (MySQL compatibility mode)
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript (No frameworks)
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript (No external frameworks)
 - **Build Tool:** Apache Maven
 - **API Testing:** Postman / cURL / REST Client
 
@@ -176,78 +274,7 @@ Base URL: `http://localhost:8080/api`
 
 ---
 
-## 6. How to Run the Project
-
-### Prerequisites
-- **Java JDK 17 or higher** installed (`java -version`).
-- **Maven 3.8+** (optional if running via the pre-built JAR or IDE).
-- **MySQL 8.x** (optional; the project is pre-configured with zero-setup embedded H2).
-
----
-
-### Option A: One-Click / Pre-Built JAR (Easiest & Fastest)
-You can run the packaged application immediately with just Java:
-
-- **Windows (One-Click):**
-  Double-click [`run.bat`](file:///d:/Deskpot/BANK/run.bat) in the project root folder.
-
-- **Command Line (Terminal / PowerShell / Command Prompt):**
-  ```bash
-  java -jar target/online-banking-mvp-0.0.1-SNAPSHOT.jar
-  ```
-
----
-
-### Option B: Using Maven
-If you prefer running through Maven:
-```bash
-mvn spring-boot:run
-```
-> **Tip for Windows users:** If your terminal shows `'mvn' is not recognized`, either add Maven to your system `PATH`, or use the packaged JAR / VS Code option below.
-
----
-
-### Option C: Inside Visual Studio Code
-1. Open the project folder in VS Code.
-2. In the file explorer, navigate to:  
-   `src/main/java/com/bank/mvp/OnlineBankingMvpApplication.java`
-3. Click the **Run** button above the `main` method (or press `F5`).
-
----
-
-### Step 2: Access the Application
-
-Once the server has started (showing `Started OnlineBankingMvpApplication` on port `8080`):
-
-1. **Frontend Web UI:**  
-   Open your web browser and go to:  
-   👉 **[http://localhost:8080/](http://localhost:8080/)**
-
-2. **H2 Database Web Console (Optional):**  
-   Visit: **[http://localhost:8080/h2-console](http://localhost:8080/h2-console)**  
-   - JDBC URL: `jdbc:h2:mem:bankdb`  
-   - User Name: `sa`  
-   - Password: *(leave blank)*
-
----
-
-### Step 3: (Optional) Switching to Local MySQL
-The application runs out of the box using embedded H2 in MySQL compatibility mode. When you want to store data in your local MySQL database:
-
-1. Open `src/main/resources/application.properties`.
-2. Comment out the H2 datasource and uncomment the MySQL lines with your local password:
-   ```properties
-   spring.datasource.url=jdbc:mysql://localhost:3306/online_banking_mvp?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-   spring.datasource.username=root
-   spring.datasource.password=YOUR_LOCAL_MYSQL_PASSWORD
-   spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-   spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-   ```
-3. Restart the application.
-
----
-
-## 7. How to Test Using Postman
+## 6. How to Test Using Postman
 
 1. Open **Postman** and create a new collection called `Banking MVP`.
 2. Set the request header `Content-Type: application/json` for all POST requests.
