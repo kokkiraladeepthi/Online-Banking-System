@@ -1,5 +1,12 @@
 package com.bank.mvp.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.bank.mvp.dto.AccountResponse;
 import com.bank.mvp.dto.CreateAccountRequest;
 import com.bank.mvp.dto.MoneyRequest;
@@ -11,12 +18,6 @@ import com.bank.mvp.model.Account;
 import com.bank.mvp.model.Transaction;
 import com.bank.mvp.repository.AccountRepository;
 import com.bank.mvp.repository.TransactionRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class AccountService {
