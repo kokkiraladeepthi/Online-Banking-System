@@ -1,8 +1,18 @@
 # Online Banking System — Enterprise API & Banking Platform
 
+![Java](https://img.shields.io/badge/Java-17%2B-orange?style=flat&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.13-brightgreen?style=flat&logo=springboot)
+![Spring Data JPA](https://img.shields.io/badge/Spring%20Data-JPA-blue?style=flat)
+![Spring-WS](https://img.shields.io/badge/SOAP-Spring--WS%204.0-blueviolet?style=flat)
+![Database](https://img.shields.io/badge/Database-MySQL%20%7C%20H2-4479A1?style=flat&logo=mysql)
+![Tests](https://img.shields.io/badge/Tests-57%20Passed-success?style=flat)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat)
+
 A full-featured, secure, and production-grade Online Banking application built with **Spring Boot 3**, **Spring Data JPA**, **MySQL / Embedded H2**, and **Spring Web Services (SOAP)**, complemented by a clean, responsive **HTML5, CSS3, and Vanilla JavaScript** single-page dashboard.
 
 Designed and implemented for **B.Tech Academic Evaluation, Project Viva, and API & Microservices Demonstration**.
+
+**Repository:** [https://github.com/kokkiraladeepthi/Online-Banking-System.git](https://github.com/kokkiraladeepthi/Online-Banking-System.git)
 
 ---
 
@@ -178,6 +188,37 @@ flowchart TD
     BusinessLayer --> DataAccessLayer
 
     DataAccessLayer --> PersistenceLayer
+```
+
+### 5.1 Project Directory Structure
+
+```
+Online-Banking-System/
+├── frontend/                     # Modern Single-Page Dashboard (HTML5, CSS3, ES6 JS)
+│   ├── index.html                # Integrated 11-section UI
+│   ├── style.css                 # Clean, responsive styles
+│   └── app.js                    # REST API client & SOAP envelope handler
+├── src/
+│   ├── main/
+│   │   ├── java/com/bank/mvp/
+│   │   │   ├── aspect/           # Spring AOP Logging Aspect (@Aspect)
+│   │   │   ├── config/           # Admin data initialization
+│   │   │   ├── controller/       # REST Controllers (User, Account, Analytics, Goals, Admin)
+│   │   │   ├── dto/              # Request & Response Data Transfer Objects (DTOs)
+│   │   │   ├── exception/        # Global Exception Handler (@RestControllerAdvice)
+│   │   │   ├── model/            # JPA Entities (User, Account, Transaction, SavingsGoal, AdminLog)
+│   │   │   ├── repository/       # Spring Data JPA Repositories
+│   │   │   ├── service/          # Business Services (@Transactional)
+│   │   │   ├── soap/             # Spring-WS SOAP Endpoint, WSDL config & JAXB models
+│   │   │   └── OnlineBankingMvpApplication.java
+│   │   └── resources/
+│   │       ├── application.properties # H2 (MySQL mode) & MySQL config
+│   │       ├── statement.xsd     # Contract-first SOAP XML Schema
+│   │       └── static/           # Served frontend static assets
+│   └── test/                     # 57 Unit and Integration Tests (100% Pass)
+├── pom.xml                       # Maven dependencies & build configuration
+├── run.bat                       # One-click Windows startup script
+└── README.md                     # Comprehensive project documentation
 ```
 
 ---
