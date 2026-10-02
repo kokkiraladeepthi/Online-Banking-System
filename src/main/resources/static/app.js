@@ -66,6 +66,14 @@ const analyticsReceived = document.getElementById('analyticsReceived');
 const analyticsSpent = document.getElementById('analyticsSpent');
 const analyticsNet = document.getElementById('analyticsNet');
 
+// Savings Goals DOM Elements
+const createGoalForm = document.getElementById('createGoalForm');
+const goalName = document.getElementById('goalName');
+const goalTargetAmount = document.getElementById('goalTargetAmount');
+const goalCurrentAmount = document.getElementById('goalCurrentAmount');
+const goalTargetDate = document.getElementById('goalTargetDate');
+const savingsGoalTableBody = document.getElementById('savingsGoalTableBody');
+
 // Notification banner helpers
 function showStatus(message, type = 'success') {
     statusBanner.className = `status-banner ${type}`;
@@ -176,12 +184,21 @@ loginForm.addEventListener('submit', async (e) => {
 
 function updateLoggedInUserView() {
     if (loggedInUser) {
-        loggedInUserInfo.textContent = `👤 ${loggedInUser.name} (User ID: ${loggedInUser.id})`;
+        const roleLabel = loggedInUser.role === 'ADMIN' ? '🛡️ [ADMIN] ' : '👤 ';
+        loggedInUserInfo.textContent = `${roleLabel}${loggedInUser.name} (User ID: ${loggedInUser.id})`;
         loggedInUserBar.style.display = 'flex';
         authFormsContainer.style.display = 'none';
         createUserId.value = loggedInUser.id;
         createName.value = loggedInUser.name;
         createEmail.value = loggedInUser.email;
+
+        // Auto-open admin view if admin logged in
+        if (loggedInUser.role === 'ADMIN') {
+            const adminSection = document.getElementById('adminSection');
+            if (adminSection && adminSection.style.display === 'none') {
+                toggleAdminView();
+            }
+        }
     } else {
         loggedInUserBar.style.display = 'none';
         authFormsContainer.style.display = 'block';
@@ -202,6 +219,7 @@ async function loadUserAccounts(userId) {
         if (res.ok && Array.isArray(accounts) && accounts.length > 0) {
             updateAccountDetailsView(accounts[0]);
             await loadTransactions(accounts[0].id);
+            await loadSavingsGoals(accounts[0].id);
         }
     } catch (e) {
         console.error('Error fetching user accounts', e);
@@ -218,6 +236,9 @@ function updateAccountDetailsView(account) {
         detailBalance.textContent = '—';
         if (transferFrom) transferFrom.value = '';
         resetAnalyticsView();
+        if (savingsGoalTableBody) {
+            savingsGoalTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td></tr>`;
+        }
         return;
     }
 
@@ -284,6 +305,7 @@ createAccountForm.addEventListener('submit', async (e) => {
         }
 
         await loadTransactions(data.id);
+        await loadSavingsGoals(data.id);
     } catch (error) {
         showStatus(error.message || 'Error connecting to backend API.', 'error');
     }
@@ -315,6 +337,7 @@ async function loadAccountById(id) {
         updateAccountDetailsView(data);
         showStatus(`Account #${data.id} loaded successfully.`, 'success');
         await loadTransactions(data.id);
+        await loadSavingsGoals(data.id);
     } catch (error) {
         showStatus(error.message || 'Error fetching account details.', 'error');
     }
@@ -586,3 +609,381 @@ function reloadCurrentTransactions() {
     loadTransactions(currentAccountId);
     showStatus('Transactions refreshed.', 'success');
 }
+
+// 7. Savings Goals Logic
+if (createGoalForm) {
+    createGoalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
+
+        if (!currentAccountId) {
+            showStatus('Please create or load an account first before creating a savings goal.', 'error');
+            return;
+        }
+
+        const name = goalName.value.trim();
+        const target = parseFloat(goalTargetAmount.value);
+        const current = goalCurrentAmount.value ? parseFloat(goalCurrentAmount.value) : 0;
+        const targetDateVal = goalTargetDate.value || null;
+
+        if (!name) {
+            showStatus('Goal name is required.', 'error');
+            return;
+        }
+        if (isNaN(target) || target <= 0) {
+            showStatus('Target amount must be greater than zero.', 'error');
+            return;
+        }
+        if (isNaN(current) || current < 0) {
+            showStatus('Current amount cannot be negative.', 'error');
+            return;
+        }
+
+        const payload = {
+            accountId: currentAccountId,
+            goalName: name,
+            targetAmount: target,
+            currentAmount: current,
+            targetDate: targetDateVal
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/savings-goals`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to create savings goal.');
+            }
+
+            showStatus(`Savings goal "${data.goalName}" created successfully! Status: ${data.status} (${data.progressPercentage.toFixed(1)}%)`, 'success');
+            createGoalForm.reset();
+            await loadSavingsGoals(currentAccountId);
+        } catch (error) {
+            showStatus(error.message || 'Error creating savings goal.', 'error');
+        }
+    });
+}
+
+async function loadSavingsGoals(accountId) {
+    if (!savingsGoalTableBody) return;
+    if (!accountId) {
+        savingsGoalTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/savings-goals/account/${accountId}`);
+        const goals = await response.json();
+
+        if (!response.ok) {
+            throw new Error('Failed to load savings goals.');
+        }
+
+        if (!Array.isArray(goals) || goals.length === 0) {
+            savingsGoalTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">No savings goals created for this account yet.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        savingsGoalTableBody.innerHTML = goals.map(goal => {
+            const pct = typeof goal.progressPercentage === 'number' ? goal.progressPercentage : 0;
+            const isCompleted = goal.status === 'COMPLETED' || pct >= 100;
+            const cappedWidth = Math.min(Math.max(pct, 0), 100);
+
+            return `
+                <tr>
+                    <td>${goal.id}</td>
+                    <td><strong>${escapeHtml(goal.goalName)}</strong></td>
+                    <td>${formatCurrency(goal.targetAmount)}</td>
+                    <td>${formatCurrency(goal.currentAmount)}</td>
+                    <td class="progress-cell">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill ${isCompleted ? 'completed' : ''}" style="width: ${cappedWidth}%;"></div>
+                        </div>
+                        <span class="progress-text">${pct.toFixed(1)}%</span>
+                    </td>
+                    <td>${goal.targetDate || '—'}</td>
+                    <td><span class="badge ${goal.status}">${goal.status}</span></td>
+                    <td>
+                        <div class="action-btns">
+                            <button type="button" class="btn-action-sm btn-add-fund" onclick="addFundsToGoal(${goal.id}, ${goal.currentAmount})">+ Save</button>
+                            <button type="button" class="btn-action-sm btn-delete-goal" onclick="deleteSavingsGoal(${goal.id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        savingsGoalTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">Unable to load savings goals: ${error.message}</td>
+            </tr>
+        `;
+    }
+}
+
+async function addFundsToGoal(goalId, currentAmount) {
+    const input = prompt(`Enter additional amount to save towards Goal #${goalId}:`);
+    if (input === null) return;
+    const additional = parseFloat(input);
+    if (isNaN(additional) || additional <= 0) {
+        showStatus('Please enter a valid positive amount.', 'error');
+        return;
+    }
+
+    const newAmount = Number((currentAmount + additional).toFixed(2));
+    try {
+        const response = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentAmount: newAmount })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to update savings goal.');
+        }
+        showStatus(`Added ${formatCurrency(additional)} to goal "${data.goalName}". Current: ${formatCurrency(data.currentAmount)} (${data.status})`, 'success');
+        if (currentAccountId) {
+            await loadSavingsGoals(currentAccountId);
+        }
+    } catch (err) {
+        showStatus(err.message, 'error');
+    }
+}
+
+async function deleteSavingsGoal(goalId) {
+    if (!confirm(`Are you sure you want to delete Savings Goal #${goalId}?`)) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to delete savings goal.');
+        }
+        showStatus('Savings goal deleted successfully.', 'success');
+        if (currentAccountId) {
+            await loadSavingsGoals(currentAccountId);
+        }
+    } catch (err) {
+        showStatus(err.message, 'error');
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+}
+
+function reloadCurrentSavingsGoals() {
+    if (!currentAccountId) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+    loadSavingsGoals(currentAccountId);
+    showStatus('Savings goals refreshed.', 'success');
+}
+
+// 8. Admin Module Logic
+let currentAdminTab = 'users';
+
+function toggleAdminView() {
+    const adminSection = document.getElementById('adminSection');
+    if (!adminSection) return;
+
+    if (adminSection.style.display === 'none' || !adminSection.style.display) {
+        adminSection.style.display = 'block';
+        loadAdminDashboardData();
+        adminSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        adminSection.style.display = 'none';
+    }
+}
+
+function switchAdminTab(tab) {
+    currentAdminTab = tab;
+    const tabs = ['users', 'accounts', 'transactions', 'logs'];
+
+    tabs.forEach(t => {
+        const btn = document.getElementById(`admin${capitalize(t)}TabBtn`);
+        const view = document.getElementById(`admin${capitalize(t)}View`);
+        if (btn) btn.classList.toggle('active', t === tab);
+        if (view) view.style.display = (t === tab) ? 'block' : 'none';
+    });
+
+    if (tab === 'users') loadAdminUsers();
+    else if (tab === 'accounts') loadAdminAccounts();
+    else if (tab === 'transactions') loadAdminTransactions();
+    else if (tab === 'logs') loadAdminLogs();
+}
+
+function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+async function loadAdminDashboardData() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/dashboard`);
+        if (!res.ok) throw new Error('Failed to load admin dashboard stats');
+        const stats = await res.json();
+
+        const uEl = document.getElementById('adminTotalUsers');
+        const aEl = document.getElementById('adminTotalAccounts');
+        const tEl = document.getElementById('adminTotalTransactions');
+        const bEl = document.getElementById('adminTotalBalance');
+        const dEl = document.getElementById('adminTotalDeposits');
+        const wEl = document.getElementById('adminTotalWithdrawals');
+        const trEl = document.getElementById('adminTotalTransfers');
+        const gEl = document.getElementById('adminTotalGoals');
+
+        if (uEl) uEl.textContent = stats.totalUsers;
+        if (aEl) aEl.textContent = stats.totalAccounts;
+        if (tEl) tEl.textContent = stats.totalTransactions;
+        if (bEl) bEl.textContent = formatCurrency(stats.totalSystemBalance);
+        if (dEl) dEl.textContent = formatCurrency(stats.totalDeposits);
+        if (wEl) wEl.textContent = formatCurrency(stats.totalWithdrawals);
+        if (trEl) trEl.textContent = formatCurrency(stats.totalTransfers);
+        if (gEl) gEl.textContent = stats.totalSavingsGoals;
+
+        // Load active sub-tab data
+        switchAdminTab(currentAdminTab);
+    } catch (err) {
+        showStatus('Error loading admin dashboard: ' + err.message, 'error');
+    }
+}
+
+async function loadAdminUsers() {
+    const tbody = document.getElementById('adminUsersTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/users`);
+        if (!res.ok) throw new Error('Failed to load users');
+        const users = await res.json();
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No users registered in system.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td><strong>${escapeHtml(u.name)}</strong></td>
+                <td>${escapeHtml(u.email)}</td>
+                <td>${escapeHtml(u.phone) || '—'}</td>
+                <td><span class="badge ${u.role}">${u.role}</span></td>
+                <td>${formatDateTime(u.createdAt)}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function loadAdminAccounts() {
+    const tbody = document.getElementById('adminAccountsTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/accounts`);
+        if (!res.ok) throw new Error('Failed to load accounts');
+        const accounts = await res.json();
+
+        if (!accounts || accounts.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No accounts found in system.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = accounts.map(a => `
+            <tr>
+                <td>${a.id}</td>
+                <td><strong>${a.accountNumber}</strong></td>
+                <td>${escapeHtml(a.name)}</td>
+                <td>${escapeHtml(a.email)}</td>
+                <td class="balance-value" style="font-size: 0.95rem;">${formatCurrency(a.balance)}</td>
+                <td>${a.userId !== undefined && a.userId !== null ? a.userId : 'None'}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function loadAdminTransactions() {
+    const tbody = document.getElementById('adminTransactionsTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/transactions`);
+        if (!res.ok) throw new Error('Failed to load transactions');
+        const txs = await res.json();
+
+        if (!txs || txs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No transactions recorded in system.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = txs.map(tx => `
+            <tr>
+                <td>${tx.id}</td>
+                <td>${tx.accountId || '—'}</td>
+                <td><span class="badge ${tx.type}">${tx.type}</span></td>
+                <td>${formatCurrency(tx.amount)}</td>
+                <td>${tx.senderAccount || '—'}</td>
+                <td>${tx.receiverAccount || '—'}</td>
+                <td>${escapeHtml(tx.description) || '—'}</td>
+                <td><span class="badge ${tx.status}">${tx.status}</span></td>
+                <td>${formatDateTime(tx.createdAt)}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function loadAdminLogs() {
+    const tbody = document.getElementById('adminLogsTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/logs`);
+        if (!res.ok) throw new Error('Failed to load admin activity logs');
+        const logs = await res.json();
+
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No activity logs recorded.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = logs.map(l => `
+            <tr>
+                <td>${l.id}</td>
+                <td><span class="badge ${l.action}">${l.action}</span></td>
+                <td><strong>${escapeHtml(l.performedBy)}</strong></td>
+                <td>${escapeHtml(l.details) || '—'}</td>
+                <td>${formatDateTime(l.timestamp)}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Error: ${err.message}</td></tr>`;
+    }
+}
+
+

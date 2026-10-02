@@ -34,6 +34,9 @@ public class User {
     @Column(length = 20)
     private String phone;
 
+    @Column(nullable = false, length = 30)
+    private String role = "CUSTOMER";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -45,16 +48,24 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (role == null || role.isBlank()) {
+            role = "CUSTOMER";
+        }
     }
 
     public User() {
     }
 
     public User(String name, String email, String password, String phone) {
+        this(name, email, password, phone, "CUSTOMER");
+    }
+
+    public User(String name, String email, String password, String phone, String role) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.phone = phone;
+        this.role = (role != null && !role.isBlank()) ? role.trim().toUpperCase() : "CUSTOMER";
     }
 
     public Long getId() {
@@ -111,5 +122,13 @@ public class User {
 
     public void setAccounts(List<Account> accounts) {
         this.accounts = accounts;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = (role != null && !role.isBlank()) ? role.trim().toUpperCase() : "CUSTOMER";
     }
 }

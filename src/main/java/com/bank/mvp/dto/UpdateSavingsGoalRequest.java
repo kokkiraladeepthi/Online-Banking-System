@@ -4,20 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public class SavingsGoalRequest {
+public class UpdateSavingsGoalRequest {
 
-    @NotNull(message = "Account ID is required")
-    private Long accountId;
-
-    @NotBlank(message = "Goal name is required")
     @Size(max = 100, message = "Goal name must not exceed 100 characters")
     private String goalName;
 
-    @NotNull(message = "Target amount is required")
     @DecimalMin(value = "0.01", message = "Target amount must be greater than 0")
     private BigDecimal targetAmount;
 
@@ -26,23 +19,17 @@ public class SavingsGoalRequest {
 
     private LocalDate targetDate;
 
-    public SavingsGoalRequest() {
+    private String status;
+
+    public UpdateSavingsGoalRequest() {
     }
 
-    public SavingsGoalRequest(Long accountId, String goalName, BigDecimal targetAmount, BigDecimal currentAmount, LocalDate targetDate) {
-        this.accountId = accountId;
+    public UpdateSavingsGoalRequest(String goalName, BigDecimal targetAmount, BigDecimal currentAmount, LocalDate targetDate, String status) {
         this.goalName = goalName;
         this.targetAmount = targetAmount;
         this.currentAmount = currentAmount;
         this.targetDate = targetDate;
-    }
-
-    public Long getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
+        this.status = status;
     }
 
     public String getGoalName() {
@@ -76,4 +63,13 @@ public class SavingsGoalRequest {
     public void setTargetDate(LocalDate targetDate) {
         this.targetDate = targetDate;
     }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }
+

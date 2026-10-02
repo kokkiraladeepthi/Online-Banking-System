@@ -22,14 +22,21 @@ public class RegisterUserRequest {
     @Size(max = 20, message = "Phone must not exceed 20 characters")
     private String phone;
 
+    private String role;
+
     public RegisterUserRequest() {
     }
 
     public RegisterUserRequest(String name, String email, String password, String phone) {
+        this(name, email, password, phone, "CUSTOMER");
+    }
+
+    public RegisterUserRequest(String name, String email, String password, String phone, String role) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.phone = phone;
+        this.role = role;
     }
 
     public String getName() {
@@ -62,5 +69,13 @@ public class RegisterUserRequest {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

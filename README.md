@@ -131,16 +131,19 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 4. **Withdraw Money:** Withdraw funds with automated balance check. Rejects attempts to withdraw more than the available balance with an `Insufficient balance for withdrawal` error.
 5. **Fund Transfer:** Transfer money safely between accounts using atomic `@Transactional` processing. Automatically validates sender, receiver, balance, deducts from sender, adds to receiver, and logs both debit (`TRANSFER_OUT`) and credit (`TRANSFER_IN`) records.
 6. **Transaction Management & History:** Stores and lists every deposit, withdrawal, and transfer chronologically with counterparty account numbers, description, type, amount, status, and timestamp.
-7. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
-8. **Request Validation (`@Valid`):** Strict bean validation on DTOs rejecting null values, blank required strings, negative amounts, zero transaction amounts, and invalid email formats.
-9. **Global Exception Handling (`@RestControllerAdvice`):** Unified error handling translating domain exceptions (`UserNotFoundException`, `AccountNotFoundException`, `InsufficientBalanceException`, `InvalidAmountException`, `DuplicateUserException`, `InvalidAccountException`) into clear JSON error payloads.
-10. **AOP Logging (`@Aspect`):** Spring AspectJ interceptor monitoring key service operations (registration, login, accounts, deposits, withdrawals, transfers, savings goals, admin) with start/completion/failure execution tracking while sanitizing sensitive credentials.
+7. **Personal Finance Analytics:** Summarizes deposits, withdrawals, transfers sent/received, net savings, and monthly aggregations without heavy external libraries.
+8. **Savings Goals:** Set financial targets with goal names, target amounts, current saved amounts, and automatic completion tracking (`progressPercentage = currentAmount / targetAmount * 100`).
+9. **Admin Module:** Dedicated administrative portal with system-wide KPI statistics, user management, accounts overview, transaction auditing, and tamper-evident activity logging.
+10. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
+11. **Request Validation (`@Valid`):** Strict bean validation on DTOs rejecting null values, blank required strings, negative amounts, zero transaction amounts, and invalid email formats.
+12. **Global Exception Handling (`@RestControllerAdvice`):** Unified error handling translating domain exceptions (`UserNotFoundException`, `AccountNotFoundException`, `InsufficientBalanceException`, `InvalidAmountException`, `DuplicateUserException`, `InvalidAccountException`, `SavingsGoalNotFoundException`) into clear JSON error payloads.
+13. **AOP Logging (`@Aspect`):** Spring AspectJ interceptor monitoring key service operations (registration, login, accounts, deposits, withdrawals, transfers, savings goals, admin) with start/completion/failure execution tracking while sanitizing sensitive credentials.
 
 ---
 
 ## 4. Database Schema
 
-The database consists of three core tables:
+The database consists of five core tables:
 
 ### `users` Table
 | Column Name | Data Type | Constraints | Description |
@@ -150,6 +153,7 @@ The database consists of three core tables:
 | `email` | `VARCHAR(150)` | UNIQUE, NOT NULL | User email address |
 | `password` | `VARCHAR(255)` | NOT NULL | BCrypt encrypted password |
 | `phone` | `VARCHAR(20)` | NULL | Optional contact phone number |
+| `role` | `VARCHAR(30)` | NOT NULL | `CUSTOMER` or `ADMIN` (default `CUSTOMER`) |
 | `created_at` | `TIMESTAMP` | NOT NULL | Registration timestamp |
 
 ### `accounts` Table
@@ -161,6 +165,18 @@ The database consists of three core tables:
 | `name` | `VARCHAR(100)` | NOT NULL | Account holder full name |
 | `email` | `VARCHAR(150)` | UNIQUE, NOT NULL | Account holder email address |
 | `balance` | `DECIMAL(19, 2)` | NOT NULL | Current account balance |
+
+### `savings_goals` Table
+| Column Name | Data Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `BIGINT` | PRIMARY KEY, AUTO_INCREMENT | Unique goal identifier |
+| `account_id` | `BIGINT` | FOREIGN KEY (`accounts.id`), NOT NULL | Associated account ID |
+| `goal_name` | `VARCHAR(100)` | NOT NULL | Name/purpose of the goal |
+| `target_amount` | `DECIMAL(19, 2)` | NOT NULL | Target savings amount |
+| `current_amount` | `DECIMAL(19, 2)` | NOT NULL | Current saved amount (default 0.00) |
+| `target_date` | `DATE` | NULL | Optional deadline for savings goal |
+| `status` | `VARCHAR(20)` | NOT NULL | `IN_PROGRESS` or `COMPLETED` |
+| `created_at` | `TIMESTAMP` | NOT NULL | Goal creation timestamp |
 
 ### `transactions` Table
 | Column Name | Data Type | Constraints | Description |
@@ -174,6 +190,15 @@ The database consists of three core tables:
 | `receiver_account` | `VARCHAR(30)` | NULL | Receiver account number |
 | `description` | `VARCHAR(255)` | NULL | Transaction remarks/purpose |
 | `created_at` | `TIMESTAMP` | NOT NULL | Timestamp when transaction occurred |
+
+### `admin_logs` Table
+| Column Name | Data Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `BIGINT` | PRIMARY KEY, AUTO_INCREMENT | Unique log entry identifier |
+| `action` | `VARCHAR(100)` | NOT NULL | Action name (e.g. `VIEW_DASHBOARD`, `VIEW_USERS`) |
+| `performed_by` | `VARCHAR(100)` | NOT NULL | Username or email of administrator |
+| `details` | `VARCHAR(500)` | NULL | Descriptive details of operation |
+| `timestamp` | `TIMESTAMP` | NOT NULL | Timestamp when action was logged |
 
 ---
 
@@ -455,12 +480,57 @@ Base URL: `http://localhost:8080/api`
   }
   ```
 
+### 5.11 Savings Goals
+- **Create Goal:** `POST /savings-goals`
+  - Body:
+    ```json
+    {
+      "accountId": 1,
+      "goalName": "New Laptop",
+      "targetAmount": 50000.00,
+      "currentAmount": 10000.00,
+      "targetDate": "2026-12-31"
+    }
+    ```
+  - Response: `201 Created` with `progressPercentage: 20.0%`, `status: "IN_PROGRESS"`.
+- **View Goal by ID:** `GET /savings-goals/{id}` (Returns single goal)
+- **View Goals by Account:** `GET /savings-goals/account/{accountId}` (Returns array of goals for account)
+- **Update Goal / Add Funds:** `PUT /savings-goals/{id}`
+  - Body:
+    ```json
+    {
+      "currentAmount": 50000.00
+    }
+    ```
+  - Automatically transitions `status` to `"COMPLETED"` when target amount is reached.
+- **Delete Goal:** `DELETE /savings-goals/{id}` (Returns `200 OK`)
+
+### 5.12 Admin Module
+- **Admin Dashboard Overview:** `GET /admin/dashboard`
+  - Response:
+    ```json
+    {
+      "totalUsers": 2,
+      "totalAccounts": 3,
+      "totalTransactions": 12,
+      "totalDeposits": 55000.00,
+      "totalWithdrawals": 12000.00,
+      "totalTransfers": 8500.00,
+      "totalSystemBalance": 43000.00,
+      "totalSavingsGoals": 4
+    }
+    ```
+- **View All Users:** `GET /admin/users` (Returns array of users with IDs, names, emails, phones, roles; passwords omitted)
+- **View All Accounts:** `GET /admin/accounts` (Returns array of all bank accounts)
+- **View All Transactions:** `GET /admin/transactions` (Returns array of system transactions chronologically)
+- **View Activity Logs:** `GET /admin/logs` (Returns audit trail of administrative accesses and operations)
+
 ---
 
 ## 6. How to Test Using Postman
 
 1. Open **Postman** and create a new collection called `Banking MVP`.
-2. Set the request header `Content-Type: application/json` for all POST requests.
+2. Set the request header `Content-Type: application/json` for all POST and PUT requests.
 
 ### Test Sequence:
 1. **User Registration:**
@@ -528,3 +598,17 @@ Base URL: `http://localhost:8080/api`
     - Method: `GET`
     - URL: `http://localhost:8080/api/analytics/account/1`
     - Verify: Status `200 OK` returning summary metrics: `totalDeposits`, `totalWithdrawals`, `totalTransfers`, `totalMoneyReceived`, `totalMoneySpent`, `netSavings`, `transactionCount`, and `monthlySummary`.
+
+11. **Savings Goals Lifecycle:**
+    - **Create Goal:** `POST http://localhost:8080/api/savings-goals` with `{"accountId": 1, "goalName": "Car Down Payment", "targetAmount": 10000.00, "currentAmount": 2500.00}` -> Verify `201 Created` with progress `25.0%`.
+    - **View Goals:** `GET http://localhost:8080/api/savings-goals/account/1` -> Verify list returned.
+    - **Update Goal (Reach Target):** `PUT http://localhost:8080/api/savings-goals/1` with `{"currentAmount": 10000.00}` -> Verify status transitions to `COMPLETED` with `100.0%`.
+    - **Delete Goal:** `DELETE http://localhost:8080/api/savings-goals/1` -> Verify `200 OK`.
+
+12. **Admin Module Operations:**
+    - **Admin Login:** `POST http://localhost:8080/api/users/login` with `{"email": "admin@bank.com", "password": "admin123"}` -> Verify role is `ADMIN`.
+    - **System Dashboard Stats:** `GET http://localhost:8080/api/admin/dashboard` -> Verify counts of users, accounts, transactions, deposits, withdrawals, transfers, and system balance.
+    - **List All Users:** `GET http://localhost:8080/api/admin/users` -> Verify all users returned without password fields.
+    - **List All Accounts:** `GET http://localhost:8080/api/admin/accounts` -> Verify all accounts returned.
+    - **List All Transactions:** `GET http://localhost:8080/api/admin/transactions` -> Verify system-wide transaction history.
+    - **Audit Activity Logs:** `GET http://localhost:8080/api/admin/logs` -> Verify tamper-evident log records.

@@ -58,8 +58,11 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(rawPassword);
         String name = request.getName() != null ? request.getName().trim() : "";
         String phone = request.getPhone() != null ? request.getPhone().trim() : null;
+        String role = (request.getRole() != null && !request.getRole().trim().isEmpty())
+                ? request.getRole().trim().toUpperCase()
+                : "CUSTOMER";
 
-        User user = new User(name, email, encodedPassword, phone);
+        User user = new User(name, email, encodedPassword, phone, role);
         User savedUser = userRepository.save(user);
 
         return mapToUserResponse(savedUser);
@@ -110,6 +113,7 @@ public class UserService {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
+                user.getRole() != null ? user.getRole() : "CUSTOMER",
                 user.getCreatedAt()
         );
     }

@@ -9,8 +9,15 @@
 <body>
     <div class="container">
         <header class="app-header">
-            <h1>Online Banking System</h1>
-            <p class="subtitle">Banking Portal with User Authentication</p>
+            <div class="header-inner">
+                <div>
+                    <h1>Online Banking System</h1>
+                    <p class="subtitle">Banking Portal with Admin Dashboard & Personal Finance</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" id="toggleAdminBtn" class="btn btn-admin btn-sm" onclick="toggleAdminView()">🛡️ Admin Portal</button>
+                </div>
+            </div>
         </header>
 
         <!-- Notification Banner -->
@@ -18,6 +25,147 @@
             <span id="statusText"></span>
             <button type="button" class="close-btn" onclick="hideStatus()">&times;</button>
         </div>
+
+        <!-- Admin Dashboard Section -->
+        <section id="adminSection" class="card full-width admin-card" style="display: none;">
+            <div class="card-header-row">
+                <h2>🛡️ Admin Management & System Dashboard</h2>
+                <div class="admin-top-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdminDashboardData()">Refresh</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAdminView()">Hide</button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="analytics-grid admin-stats-grid">
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Users</span>
+                    <span class="analytics-value text-info" id="adminTotalUsers">0</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Accounts</span>
+                    <span class="analytics-value text-primary" id="adminTotalAccounts">0</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Transactions</span>
+                    <span class="analytics-value text-purple" id="adminTotalTransactions">0</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total System Balance</span>
+                    <span class="analytics-value text-success" id="adminTotalBalance">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Deposits</span>
+                    <span class="analytics-value text-success" id="adminTotalDeposits">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Withdrawals</span>
+                    <span class="analytics-value text-danger" id="adminTotalWithdrawals">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Transfers</span>
+                    <span class="analytics-value text-warning" id="adminTotalTransfers">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Savings Goals</span>
+                    <span class="analytics-value text-info" id="adminTotalGoals">0</span>
+                </div>
+            </div>
+
+            <!-- Admin Sub Tabs -->
+            <div class="admin-tabs" style="margin-top: 20px; display: flex; gap: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">
+                <button type="button" class="tab-btn active" id="adminUsersTabBtn" onclick="switchAdminTab('users')">Users</button>
+                <button type="button" class="tab-btn" id="adminAccountsTabBtn" onclick="switchAdminTab('accounts')">Accounts</button>
+                <button type="button" class="tab-btn" id="adminTransactionsTabBtn" onclick="switchAdminTab('transactions')">Transactions</button>
+                <button type="button" class="tab-btn" id="adminLogsTabBtn" onclick="switchAdminTab('logs')">Activity Logs</button>
+            </div>
+
+            <!-- Users Tab View -->
+            <div id="adminUsersView" class="admin-tab-content" style="margin-top: 14px;">
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Role</th>
+                                <th>Registered At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUsersTableBody">
+                            <tr><td colspan="6" class="empty-state">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Accounts Tab View -->
+            <div id="adminAccountsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Account Number</th>
+                                <th>Account Holder</th>
+                                <th>Email</th>
+                                <th>Balance</th>
+                                <th>User ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminAccountsTableBody">
+                            <tr><td colspan="6" class="empty-state">Loading accounts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Transactions Tab View -->
+            <div id="adminTransactionsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Acc ID</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTransactionsTableBody">
+                            <tr><td colspan="9" class="empty-state">Loading transactions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Activity Logs Tab View -->
+            <div id="adminLogsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Action</th>
+                                <th>Performed By</th>
+                                <th>Details</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminLogsTableBody">
+                            <tr><td colspan="5" class="empty-state">Loading activity logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
         <!-- 0. User Authentication (Register & Login) -->
         <section class="card auth-card">
@@ -240,10 +388,65 @@
             </div>
         </section>
 
-        <!-- 7. Transaction History -->
+        <!-- 7. Savings Goals -->
         <section class="card full-width">
             <div class="card-header-row">
-                <h2>7. Transaction History</h2>
+                <h2>7. Savings Goals</h2>
+                <button type="button" id="refreshGoalsBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentSavingsGoals()">Refresh</button>
+            </div>
+
+            <!-- Create Goal Form -->
+            <form id="createGoalForm" style="margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="goalName">Goal Name <span class="required">*</span></label>
+                        <input type="text" id="goalName" placeholder="e.g. New Laptop" required>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="goalTargetAmount">Target Amount <span class="required">*</span></label>
+                        <input type="number" id="goalTargetAmount" step="0.01" min="0.01" placeholder="e.g. 50000.00" required>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="goalCurrentAmount">Current Saved</label>
+                        <input type="number" id="goalCurrentAmount" step="0.01" min="0" placeholder="e.g. 5000.00 (optional)">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="goalTargetDate">Target Date</label>
+                        <input type="date" id="goalTargetDate">
+                    </div>
+                    <div class="form-group form-btn-align">
+                        <button type="submit" id="createGoalBtn" class="btn btn-primary">Create Goal</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="transaction-table" id="savingsGoalTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Goal Name</th>
+                            <th>Target Amount</th>
+                            <th>Current Amount</th>
+                            <th>Progress</th>
+                            <th>Target Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="savingsGoalTableBody">
+                        <tr>
+                            <td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 8. Transaction History -->
+        <section class="card full-width">
+            <div class="card-header-row">
+                <h2>8. Transaction History</h2>
                 <button type="button" id="refreshTxBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentTransactions()">Refresh</button>
             </div>
 

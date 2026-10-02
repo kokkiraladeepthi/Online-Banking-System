@@ -508,3 +508,151 @@ input[type="number"]:focus {
 .text-purple { color: #7c3aed; }
 .text-info { color: #2563eb; }
 .text-primary { color: #1d4ed8; }
+
+/* Savings Goals Styles */
+input[type="date"] {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 0.95rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #fafafa;
+    color: #1f2937;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: #2563eb;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.progress-cell {
+    min-width: 140px;
+}
+
+.progress-bar-bg {
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progress-bar-fill {
+    background-color: #059669;
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.progress-bar-fill.completed {
+    background-color: #2563eb;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.badge.COMPLETED {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge.IN_PROGRESS {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.action-btns {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-action-sm {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-add-fund {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.btn-add-fund:hover {
+    background-color: #059669;
+}
+
+.btn-delete-goal {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+.btn-delete-goal:hover {
+    background-color: #dc2626;
+}
+
+/* Admin Dashboard Styles */
+.header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.btn-admin {
+    background-color: #312e81;
+    color: #ffffff;
+    font-weight: 600;
+    border: 1px solid #4338ca;
+}
+
+.btn-admin:hover {
+    background-color: #4338ca;
+}
+
+.admin-card {
+    border: 2px solid #a5b4fc;
+    background: #ffffff;
+}
+
+.admin-top-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.badge.ADMIN {
+    background-color: #ede9fe;
+    color: #5b21b6;
+    font-weight: 700;
+}
+
+.badge.CUSTOMER {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge.SYSTEM_INIT {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.badge.VIEW_USERS,
+.badge.VIEW_ACCOUNTS,
+.badge.VIEW_TRANSACTIONS,
+.badge.VIEW_DASHBOARD,
+.badge.VIEW_LOGS {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+

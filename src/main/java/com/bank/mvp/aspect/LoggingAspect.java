@@ -82,6 +82,11 @@ public class LoggingAspect {
             case "withdraw" -> "Account Withdrawal";
             case "transferMoney" -> "Fund Transfer";
             case "getAccountAnalytics" -> "Personal Finance Analytics";
+            case "getAllUsers" -> "Admin View All Users";
+            case "getAllAccounts" -> "Admin View All Accounts";
+            case "getAllTransactions" -> "Admin View All Transactions";
+            case "getDashboardStats" -> "Admin Dashboard Statistics";
+            case "getAdminLogs" -> "Admin View Activity Logs";
             default -> {
                 if (methodName.toLowerCase().contains("goal")) {
                     yield "Savings Goal Operation (" + methodName + ")";
