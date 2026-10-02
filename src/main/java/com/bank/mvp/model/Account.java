@@ -3,9 +3,12 @@ package com.bank.mvp.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -36,6 +39,10 @@ public class Account {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     public Account() {
     }
 
@@ -44,6 +51,14 @@ public class Account {
         this.name = name;
         this.email = email;
         this.balance = balance;
+    }
+
+    public Account(String accountNumber, String name, String email, BigDecimal balance, User user) {
+        this.accountNumber = accountNumber;
+        this.name = name;
+        this.email = email;
+        this.balance = balance;
+        this.user = user;
     }
 
     public Long getId() {
@@ -92,5 +107,13 @@ public class Account {
 
     public void setTransactions(List<Transaction> transactions) {
         this.transactions = transactions;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

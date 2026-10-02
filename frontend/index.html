@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Banking System MVP</title>
+    <title>Online Banking System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header class="app-header">
             <h1>Online Banking System</h1>
-            <p class="subtitle">Simple & Clean MVP Banking Portal</p>
+            <p class="subtitle">Banking Portal with User Authentication</p>
         </header>
 
         <!-- Notification Banner -->
@@ -18,6 +18,68 @@
             <span id="statusText"></span>
             <button type="button" class="close-btn" onclick="hideStatus()">&times;</button>
         </div>
+
+        <!-- 0. User Authentication (Register & Login) -->
+        <section class="card auth-card">
+            <div class="card-header-row">
+                <h2>User Authentication</h2>
+                <div id="loggedInUserBar" style="display: none;">
+                    <span id="loggedInUserInfo" class="user-badge"></span>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="logoutUser()">Logout</button>
+                </div>
+            </div>
+
+            <div id="authFormsContainer">
+                <div class="auth-tabs">
+                    <button type="button" class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Login</button>
+                    <button type="button" class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="loginEmail">Email <span class="required">*</span></label>
+                            <input type="email" id="loginEmail" placeholder="user@example.com" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="loginPassword">Password <span class="required">*</span></label>
+                            <input type="password" id="loginPassword" placeholder="Enter password" required>
+                        </div>
+                        <div class="form-group form-btn-align">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="auth-form" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="regName">Name <span class="required">*</span></label>
+                            <input type="text" id="regName" placeholder="Full Name" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="regEmail">Email <span class="required">*</span></label>
+                            <input type="email" id="regEmail" placeholder="user@example.com" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="regPassword">Password <span class="required">*</span></label>
+                            <input type="password" id="regPassword" minlength="6" placeholder="Min 6 characters" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="regPhone">Phone</label>
+                            <input type="text" id="regPhone" placeholder="e.g. 9876543210">
+                        </div>
+                        <div class="form-group form-btn-align">
+                            <button type="submit" class="btn btn-success">Register</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
 
         <div class="main-grid">
             <!-- 1. Create Account -->
@@ -43,6 +105,11 @@
                     <div class="form-group">
                         <label for="createInitialBalance">Initial Balance <span class="required">*</span></label>
                         <input type="number" id="createInitialBalance" step="0.01" min="0" placeholder="e.g. 5000.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="createUserId">Linked User ID (Optional)</label>
+                        <input type="number" id="createUserId" placeholder="e.g. 1 (auto-filled if logged in)">
                     </div>
 
                     <button type="submit" id="createBtn" class="btn btn-primary">Create Account</button>
@@ -75,6 +142,10 @@
                             <span class="detail-value" id="detailAccountNumber">—</span>
                         </div>
                         <div class="detail-item">
+                            <span class="detail-label">User ID</span>
+                            <span class="detail-value" id="detailUserId">—</span>
+                        </div>
+                        <div class="detail-item full-span">
                             <span class="detail-label">Balance</span>
                             <span class="detail-value balance-value" id="detailBalance">—</span>
                         </div>

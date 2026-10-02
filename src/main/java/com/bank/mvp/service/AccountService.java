@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,18 +17,27 @@ import com.bank.mvp.exception.InvalidAmountException;
 import com.bank.mvp.exception.ResourceNotFoundException;
 import com.bank.mvp.model.Account;
 import com.bank.mvp.model.Transaction;
+import com.bank.mvp.model.User;
 import com.bank.mvp.repository.AccountRepository;
 import com.bank.mvp.repository.TransactionRepository;
+import com.bank.mvp.repository.UserRepository;
 
 @Service
 public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
 
-    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    @Autowired
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
+    }
+
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+        this(accountRepository, transactionRepository, null);
     }
 
     public AccountResponse createAccount(CreateAccountRequest request) {
@@ -66,6 +76,11 @@ public class AccountService {
         }
 
         Account account = new Account(accountNumber, name, email, initialBalance);
+        if (userRepository != null && request.getUserId() != null) {
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
+            account.setUser(user);
+        }
         Account saved = accountRepository.save(account);
         return mapToAccountResponse(saved);
     }
@@ -137,12 +152,14 @@ public class AccountService {
     }
 
     private AccountResponse mapToAccountResponse(Account account) {
+        Long userId = account.getUser() != null ? account.getUser().getId() : null;
         return new AccountResponse(
                 account.getId(),
                 account.getAccountNumber(),
                 account.getName(),
                 account.getEmail(),
-                account.getBalance()
+                account.getBalance(),
+                userId
         );
     }
 

@@ -22,6 +22,8 @@ public class CreateAccountRequest {
     @NotNull(message = "Initial balance is required")
     private BigDecimal initialBalance;
 
+    private Long userId;
+
     public String getName() {
         return name;
     }
@@ -52,5 +54,13 @@ public class CreateAccountRequest {
 
     public void setInitialBalance(BigDecimal initialBalance) {
         this.initialBalance = initialBalance;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

@@ -136,12 +136,23 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 
 ## 4. Database Schema
 
-The database consists of two core tables:
+The database consists of three core tables:
+
+### `users` Table
+| Column Name | Data Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `BIGINT` | PRIMARY KEY, AUTO_INCREMENT | Unique user identifier |
+| `name` | `VARCHAR(100)` | NOT NULL | User full name |
+| `email` | `VARCHAR(150)` | UNIQUE, NOT NULL | User email address |
+| `password` | `VARCHAR(255)` | NOT NULL | BCrypt encrypted password |
+| `phone` | `VARCHAR(20)` | NULL | Optional contact phone number |
+| `created_at` | `TIMESTAMP` | NOT NULL | Registration timestamp |
 
 ### `accounts` Table
 | Column Name | Data Type | Constraints | Description |
 |---|---|---|---|
 | `id` | `BIGINT` | PRIMARY KEY, AUTO_INCREMENT | Unique identifier for account |
+| `user_id` | `BIGINT` | FOREIGN KEY (`users.id`), NULL | Associated user (optional) |
 | `account_number` | `VARCHAR(20)` | UNIQUE, NOT NULL | Account number (e.g. `ACC-12345678`) |
 | `name` | `VARCHAR(100)` | NOT NULL | Account holder full name |
 | `email` | `VARCHAR(150)` | UNIQUE, NOT NULL | Account holder email address |
@@ -163,7 +174,71 @@ The database consists of two core tables:
 
 Base URL: `http://localhost:8080/api`
 
-### 5.1 Create Account
+### 5.1 User Registration
+- **Method:** `POST`
+- **Endpoint:** `/users/register`
+- **Request Body:**
+  ```json
+  {
+    "name": "David Miller",
+    "email": "david.miller@example.com",
+    "password": "securePassword123",
+    "phone": "9876501234"
+  }
+  ```
+- **Response (201 Created):**
+  ```json
+  {
+    "id": 1,
+    "name": "David Miller",
+    "email": "david.miller@example.com",
+    "phone": "9876501234",
+    "createdAt": "2026-10-02T23:36:25.521"
+  }
+  ```
+
+### 5.2 User Login
+- **Method:** `POST`
+- **Endpoint:** `/users/login`
+- **Request Body:**
+  ```json
+  {
+    "email": "david.miller@example.com",
+    "password": "securePassword123"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "message": "Login successful",
+    "user": {
+      "id": 1,
+      "name": "David Miller",
+      "email": "david.miller@example.com",
+      "phone": "9876501234",
+      "createdAt": "2026-10-02T23:36:25.521"
+    }
+  }
+  ```
+
+### 5.3 Get User's Accounts
+- **Method:** `GET`
+- **Endpoint:** `/users/{id}/accounts`
+- **Response (200 OK):**
+  ```json
+  [
+    {
+      "id": 1,
+      "accountNumber": "ACC-DAVE-01",
+      "name": "David Checking",
+      "email": "david.checking@example.com",
+      "balance": 10000.00,
+      "userId": 1
+    }
+  ]
+  ```
+
+### 5.4 Create Account
 - **Method:** `POST`
 - **Endpoint:** `/accounts`
 - **Request Body:**
@@ -172,10 +247,11 @@ Base URL: `http://localhost:8080/api`
     "name": "John Doe",
     "email": "john.doe@example.com",
     "accountNumber": "ACC-1001",
-    "initialBalance": 5000.00
+    "initialBalance": 5000.00,
+    "userId": 1
   }
   ```
-  *(Note: `accountNumber` is optional; if omitted, the system generates an `ACC-XXXXXXXX` code).*
+  *(Note: `accountNumber` and `userId` are optional).*
 - **Response (201 Created):**
   ```json
   {
@@ -183,11 +259,12 @@ Base URL: `http://localhost:8080/api`
     "accountNumber": "ACC-1001",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "balance": 5000.00
+    "balance": 5000.00,
+    "userId": 1
   }
   ```
 
-### 5.2 View Account Details
+### 5.5 View Account Details
 - **Method:** `GET`
 - **Endpoint:** `/accounts/{id}`
 - **Response (200 OK):**
@@ -197,11 +274,12 @@ Base URL: `http://localhost:8080/api`
     "accountNumber": "ACC-1001",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "balance": 5000.00
+    "balance": 5000.00,
+    "userId": 1
   }
   ```
 
-### 5.3 Deposit Money
+### 5.6 Deposit Money
 - **Method:** `POST`
 - **Endpoint:** `/accounts/{id}/deposit`
 - **Request Body:**
@@ -217,11 +295,12 @@ Base URL: `http://localhost:8080/api`
     "accountNumber": "ACC-1001",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "balance": 7000.00
+    "balance": 7000.00,
+    "userId": 1
   }
   ```
 
-### 5.4 Withdraw Money
+### 5.7 Withdraw Money
 - **Method:** `POST`
 - **Endpoint:** `/accounts/{id}/withdraw`
 - **Request Body:**
@@ -237,7 +316,8 @@ Base URL: `http://localhost:8080/api`
     "accountNumber": "ACC-1001",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "balance": 5500.00
+    "balance": 5500.00,
+    "userId": 1
   }
   ```
 - **Response (400 Bad Request - Insufficient Funds):**
@@ -247,7 +327,7 @@ Base URL: `http://localhost:8080/api`
   }
   ```
 
-### 5.5 Transaction History
+### 5.8 Transaction History
 - **Method:** `GET`
 - **Endpoint:** `/transactions/account/{accountId}`
 - **Response (200 OK):**

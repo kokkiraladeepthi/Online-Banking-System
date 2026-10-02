@@ -3,18 +3,36 @@ const API_BASE = (window.location.protocol === 'http:' || window.location.protoc
     ? (window.location.port === '8080' ? '/api' : 'http://localhost:8080/api')
     : 'http://localhost:8080/api';
 
-// Current active account ID state
+// State
 let currentAccountId = null;
+let loggedInUser = null;
 
 // DOM Elements
 const statusBanner = document.getElementById('statusBanner');
 const statusText = document.getElementById('statusText');
 
+// Auth DOM Elements
+const loggedInUserBar = document.getElementById('loggedInUserBar');
+const loggedInUserInfo = document.getElementById('loggedInUserInfo');
+const authFormsContainer = document.getElementById('authFormsContainer');
+const loginTabBtn = document.getElementById('loginTabBtn');
+const registerTabBtn = document.getElementById('registerTabBtn');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+const regName = document.getElementById('regName');
+const regEmail = document.getElementById('regEmail');
+const regPassword = document.getElementById('regPassword');
+const regPhone = document.getElementById('regPhone');
+
+// Account DOM Elements
 const createAccountForm = document.getElementById('createAccountForm');
 const createName = document.getElementById('createName');
 const createEmail = document.getElementById('createEmail');
 const createAccountNumber = document.getElementById('createAccountNumber');
 const createInitialBalance = document.getElementById('createInitialBalance');
+const createUserId = document.getElementById('createUserId');
 
 const fetchAccountForm = document.getElementById('fetchAccountForm');
 const lookupAccountId = document.getElementById('lookupAccountId');
@@ -22,6 +40,7 @@ const lookupAccountId = document.getElementById('lookupAccountId');
 const detailAccountId = document.getElementById('detailAccountId');
 const detailName = document.getElementById('detailName');
 const detailAccountNumber = document.getElementById('detailAccountNumber');
+const detailUserId = document.getElementById('detailUserId');
 const detailBalance = document.getElementById('detailBalance');
 
 const depositForm = document.getElementById('depositForm');
@@ -32,7 +51,7 @@ const withdrawAmount = document.getElementById('withdrawAmount');
 
 const transactionTableBody = document.getElementById('transactionTableBody');
 
-// Helper to show notification banner
+// Notification banner helpers
 function showStatus(message, type = 'success') {
     statusBanner.className = `status-banner ${type}`;
     statusText.textContent = message;
@@ -44,19 +63,134 @@ function hideStatus() {
     statusText.textContent = '';
 }
 
-// Helper to format currency
+// Formatters
 function formatCurrency(val) {
     if (val === null || val === undefined) return '—';
     const num = Number(val);
     return isNaN(num) ? '—' : '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Helper to format ISO date
 function formatDateTime(isoString) {
     if (!isoString) return '—';
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return isoString;
     return date.toLocaleString();
+}
+
+// Auth Tab Switching
+function switchAuthTab(tab) {
+    if (tab === 'login') {
+        loginTabBtn.classList.add('active');
+        registerTabBtn.classList.remove('active');
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else {
+        registerTabBtn.classList.add('active');
+        loginTabBtn.classList.remove('active');
+        registerForm.style.display = 'block';
+        loginForm.style.display = 'none';
+    }
+}
+
+// User Registration
+registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+
+    const payload = {
+        name: regName.value.trim(),
+        email: regEmail.value.trim(),
+        password: regPassword.value,
+        phone: regPhone.value.trim() || null
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Registration failed.');
+        }
+
+        showStatus(`Registration successful for ${data.name}! You can now login.`, 'success');
+        registerForm.reset();
+        loginEmail.value = payload.email;
+        switchAuthTab('login');
+    } catch (err) {
+        showStatus(err.message, 'error');
+    }
+});
+
+// User Login
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+
+    const payload = {
+        email: loginEmail.value.trim(),
+        password: loginPassword.value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/users/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed.');
+        }
+
+        loggedInUser = data.user;
+        updateLoggedInUserView();
+        showStatus(`Welcome back, ${loggedInUser.name}!`, 'success');
+        loginForm.reset();
+
+        // Check if user has accounts and load first one
+        await loadUserAccounts(loggedInUser.id);
+    } catch (err) {
+        showStatus(err.message, 'error');
+    }
+});
+
+function updateLoggedInUserView() {
+    if (loggedInUser) {
+        loggedInUserInfo.textContent = `👤 ${loggedInUser.name} (User ID: ${loggedInUser.id})`;
+        loggedInUserBar.style.display = 'flex';
+        authFormsContainer.style.display = 'none';
+        createUserId.value = loggedInUser.id;
+        createName.value = loggedInUser.name;
+        createEmail.value = loggedInUser.email;
+    } else {
+        loggedInUserBar.style.display = 'none';
+        authFormsContainer.style.display = 'block';
+        createUserId.value = '';
+    }
+}
+
+function logoutUser() {
+    loggedInUser = null;
+    updateLoggedInUserView();
+    showStatus('Logged out successfully.', 'success');
+}
+
+async function loadUserAccounts(userId) {
+    try {
+        const res = await fetch(`${API_BASE}/users/${userId}/accounts`);
+        const accounts = await res.json();
+        if (res.ok && Array.isArray(accounts) && accounts.length > 0) {
+            updateAccountDetailsView(accounts[0]);
+            await loadTransactions(accounts[0].id);
+        }
+    } catch (e) {
+        console.error('Error fetching user accounts', e);
+    }
 }
 
 // Update Account Details UI
@@ -65,6 +199,7 @@ function updateAccountDetailsView(account) {
         detailAccountId.textContent = '—';
         detailName.textContent = '—';
         detailAccountNumber.textContent = '—';
+        detailUserId.textContent = '—';
         detailBalance.textContent = '—';
         return;
     }
@@ -74,6 +209,7 @@ function updateAccountDetailsView(account) {
     detailAccountId.textContent = account.id;
     detailName.textContent = account.name;
     detailAccountNumber.textContent = account.accountNumber;
+    detailUserId.textContent = account.userId !== undefined && account.userId !== null ? account.userId : 'None';
     detailBalance.textContent = formatCurrency(account.balance);
 }
 
@@ -86,6 +222,7 @@ createAccountForm.addEventListener('submit', async (e) => {
     const email = createEmail.value.trim();
     const accountNumber = createAccountNumber.value.trim();
     const initialBalance = parseFloat(createInitialBalance.value);
+    const userIdVal = createUserId.value ? parseInt(createUserId.value, 10) : null;
 
     if (isNaN(initialBalance) || initialBalance < 0) {
         showStatus('Initial balance cannot be negative.', 'error');
@@ -100,6 +237,9 @@ createAccountForm.addEventListener('submit', async (e) => {
 
     if (accountNumber) {
         payload.accountNumber = accountNumber;
+    }
+    if (userIdVal && !isNaN(userIdVal)) {
+        payload.userId = userIdVal;
     }
 
     try {
@@ -120,10 +260,11 @@ createAccountForm.addEventListener('submit', async (e) => {
         updateAccountDetailsView(data);
         showStatus(`Account created successfully! Account ID: ${data.id}, Account No: ${data.accountNumber}`, 'success');
 
-        // Reset form inputs
         createAccountForm.reset();
+        if (loggedInUser) {
+            createUserId.value = loggedInUser.id;
+        }
 
-        // Load transactions
         await loadTransactions(data.id);
     } catch (error) {
         showStatus(error.message || 'Error connecting to backend API.', 'error');
