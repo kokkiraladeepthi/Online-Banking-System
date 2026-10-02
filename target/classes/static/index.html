@@ -8,9 +8,23 @@
 </head>
 <body>
     <div class="container">
+        <!-- App Header -->
         <header class="app-header">
-            <h1>Online Banking System</h1>
-            <p class="subtitle">Banking Portal with User Authentication</p>
+            <div class="header-inner">
+                <div>
+                    <h1>Online Banking System</h1>
+                    <p class="subtitle">Complete Banking Portal & Management Dashboard</p>
+                </div>
+                <div class="header-actions">
+                    <div id="loggedInUserBar" style="display: none; align-items: center; gap: 8px;">
+                        <span id="loggedInUserInfo" class="user-badge"></span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="logoutUser()">Logout</button>
+                    </div>
+                    <div id="loggedOutBar">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="navigateToSection('secAuth')">🔑 Login / Register</button>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <!-- Notification Banner -->
@@ -19,112 +33,286 @@
             <button type="button" class="close-btn" onclick="hideStatus()">&times;</button>
         </div>
 
-        <!-- 0. User Authentication (Register & Login) -->
-        <section class="card auth-card">
-            <div class="card-header-row">
-                <h2>User Authentication</h2>
-                <div id="loggedInUserBar" style="display: none;">
-                    <span id="loggedInUserInfo" class="user-badge"></span>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="logoutUser()">Logout</button>
+        <!-- Top Navigation Bar -->
+        <nav class="nav-bar-container">
+            <div class="nav-bar">
+                <button type="button" class="nav-btn active" data-section="secDashboard" onclick="navigateToSection('secDashboard')">📊 Dashboard</button>
+                <button type="button" class="nav-btn" data-section="secAuth" onclick="navigateToSection('secAuth')">🔐 Login / Register</button>
+                <button type="button" class="nav-btn" data-section="secAccount" onclick="navigateToSection('secAccount')">💳 Account Details</button>
+                <button type="button" class="nav-btn" data-section="secDeposit" onclick="navigateToSection('secDeposit')">📥 Deposit</button>
+                <button type="button" class="nav-btn" data-section="secWithdraw" onclick="navigateToSection('secWithdraw')">📤 Withdraw</button>
+                <button type="button" class="nav-btn" data-section="secTransfer" onclick="navigateToSection('secTransfer')">🔄 Fund Transfer</button>
+                <button type="button" class="nav-btn" data-section="secHistory" onclick="navigateToSection('secHistory')">📜 Transactions</button>
+                <button type="button" class="nav-btn" data-section="secAnalytics" onclick="navigateToSection('secAnalytics')">📈 Analytics</button>
+                <button type="button" class="nav-btn" data-section="secGoals" onclick="navigateToSection('secGoals')">🎯 Savings Goals</button>
+                <button type="button" class="nav-btn nav-admin" data-section="secAdmin" id="navAdminBtn" onclick="navigateToSection('secAdmin')">🛡️ Admin Dashboard</button>
+                <button type="button" class="nav-btn" data-section="secSoap" onclick="navigateToSection('secSoap')">🧾 SOAP Statement</button>
+            </div>
+        </nav>
+
+        <!-- ========================================================
+             SECTION 3: CUSTOMER DASHBOARD (Default Main View)
+             ======================================================== -->
+        <section id="secDashboard" class="section-view active-section">
+            <!-- Customer Hero Card -->
+            <div class="customer-hero-card">
+                <div class="hero-header">
+                    <div class="hero-account-info">
+                        <span class="hero-account-no" id="dashAccountNo">ACC-NONE</span>
+                        <span class="hero-holder-name" id="dashHolder">No account loaded</span>
+                        <small style="opacity: 0.8; font-size: 0.8rem;" id="dashAccountIdBadge">Account ID: —</small>
+                    </div>
+                    <form id="dashAccountSwitchForm" class="hero-account-switcher" onsubmit="handleDashAccountSwitch(event)">
+                        <input type="text" id="dashSwitchInput" placeholder="Account ID or No." required>
+                        <button type="submit" id="dashSwitchBtn">Switch</button>
+                    </form>
+                </div>
+
+                <div class="hero-balance-container">
+                    <div class="hero-balance-label">Current Available Balance</div>
+                    <div class="hero-balance-amount" id="dashBalance">₹0.00</div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="quick-actions-bar">
+                    <button type="button" class="quick-action-btn" id="btnQuickDepositToggle" onclick="toggleQuickAction('deposit')">📥 Deposit</button>
+                    <button type="button" class="quick-action-btn" id="btnQuickWithdrawToggle" onclick="toggleQuickAction('withdraw')">📤 Withdraw</button>
+                    <button type="button" class="quick-action-btn" id="btnQuickTransferToggle" onclick="toggleQuickAction('transfer')">🔄 Transfer</button>
                 </div>
             </div>
 
-            <div id="authFormsContainer">
-                <div class="auth-tabs">
-                    <button type="button" class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Login</button>
-                    <button type="button" class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Register</button>
+            <!-- Inline Quick Form Panels (Customer Dashboard Quick Actions) -->
+            <!-- Quick Deposit Panel -->
+            <div id="quickDepositPanel" class="inline-quick-form">
+                <div class="inline-quick-form-header">
+                    <h3>📥 Quick Deposit to <span id="quickDepositTargetAcc">—</span></h3>
+                    <button type="button" class="btn-action-sm btn-secondary" onclick="toggleQuickAction(null)">&times; Close</button>
+                </div>
+                <form id="quickDepositForm" onsubmit="handleQuickDeposit(event)">
+                    <div class="form-row" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div class="form-group flex-1" style="margin-bottom: 0;">
+                            <label for="quickDepositAmount">Deposit Amount (₹) <span class="required">*</span></label>
+                            <input type="number" id="quickDepositAmount" step="0.01" min="0.01" placeholder="e.g. 2000.00" required>
+                        </div>
+                        <button type="submit" id="quickDepositSubmitBtn" class="btn btn-success" style="width: 140px; margin-bottom: 0;">Deposit</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Withdraw Panel -->
+            <div id="quickWithdrawPanel" class="inline-quick-form">
+                <div class="inline-quick-form-header">
+                    <h3>📤 Quick Withdraw from <span id="quickWithdrawTargetAcc">—</span></h3>
+                    <button type="button" class="btn-action-sm btn-secondary" onclick="toggleQuickAction(null)">&times; Close</button>
+                </div>
+                <form id="quickWithdrawForm" onsubmit="handleQuickWithdraw(event)">
+                    <div class="form-row" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div class="form-group flex-1" style="margin-bottom: 0;">
+                            <label for="quickWithdrawAmount">Withdraw Amount (₹) <span class="required">*</span></label>
+                            <input type="number" id="quickWithdrawAmount" step="0.01" min="0.01" placeholder="e.g. 1000.00" required>
+                        </div>
+                        <button type="submit" id="quickWithdrawSubmitBtn" class="btn btn-warning" style="width: 140px; margin-bottom: 0;">Withdraw</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Transfer Panel -->
+            <div id="quickTransferPanel" class="inline-quick-form">
+                <div class="inline-quick-form-header">
+                    <h3>🔄 Quick Transfer from <span id="quickTransferSourceAcc">—</span></h3>
+                    <button type="button" class="btn-action-sm btn-secondary" onclick="toggleQuickAction(null)">&times; Close</button>
+                </div>
+                <form id="quickTransferForm" onsubmit="handleQuickTransfer(event)">
+                    <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 10px;">
+                        <div class="form-group flex-1">
+                            <label for="quickTransferTo">Recipient Account (ID or No.) <span class="required">*</span></label>
+                            <input type="text" id="quickTransferTo" placeholder="Receiver Account ID or Number" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="quickTransferAmount">Amount (₹) <span class="required">*</span></label>
+                            <input type="number" id="quickTransferAmount" step="0.01" min="0.01" placeholder="e.g. 500.00" required>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div class="form-group flex-1" style="margin-bottom: 0;">
+                            <label for="quickTransferDesc">Description (Optional)</label>
+                            <input type="text" id="quickTransferDesc" placeholder="e.g. Dinner share / Rent">
+                        </div>
+                        <button type="submit" id="quickTransferSubmitBtn" class="btn btn-primary" style="width: 160px; margin-bottom: 0;">Send Money</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Dashboard Widgets Grid: Analytics Summary & Savings Goals -->
+            <div class="dashboard-widgets-grid">
+                <!-- Widget 1: Analytics Summary -->
+                <div class="widget-card">
+                    <div class="widget-header">
+                        <h3>📈 Analytics Summary</h3>
+                        <button type="button" class="widget-link-btn" onclick="navigateToSection('secAnalytics')">View Details →</button>
+                    </div>
+                    <div class="analytics-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="analytics-card" style="padding: 10px;">
+                            <span class="analytics-label">Deposits</span>
+                            <span class="analytics-value text-success" id="dashAnalyticsDeposits" style="font-size: 1.1rem;">₹0.00</span>
+                        </div>
+                        <div class="analytics-card" style="padding: 10px;">
+                            <span class="analytics-label">Withdrawals</span>
+                            <span class="analytics-value text-danger" id="dashAnalyticsWithdrawals" style="font-size: 1.1rem;">₹0.00</span>
+                        </div>
+                        <div class="analytics-card" style="padding: 10px;">
+                            <span class="analytics-label">Transfers</span>
+                            <span class="analytics-value text-purple" id="dashAnalyticsTransfers" style="font-size: 1.1rem;">₹0.00</span>
+                        </div>
+                        <div class="analytics-card" style="padding: 10px;">
+                            <span class="analytics-label">Net Savings</span>
+                            <span class="analytics-value text-primary" id="dashAnalyticsNet" style="font-size: 1.1rem;">₹0.00</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Login Form -->
-                <form id="loginForm" class="auth-form">
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="loginEmail">Email <span class="required">*</span></label>
-                            <input type="email" id="loginEmail" placeholder="user@example.com" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="loginPassword">Password <span class="required">*</span></label>
-                            <input type="password" id="loginPassword" placeholder="Enter password" required>
-                        </div>
-                        <div class="form-group form-btn-align">
-                            <button type="submit" class="btn btn-primary">Login</button>
-                        </div>
+                <!-- Widget 2: Savings Goal Progress -->
+                <div class="widget-card">
+                    <div class="widget-header">
+                        <h3>🎯 Savings Goal Progress</h3>
+                        <button type="button" class="widget-link-btn" onclick="navigateToSection('secGoals')">Manage Goals →</button>
                     </div>
-                </form>
+                    <div id="dashGoalsContainer">
+                        <p class="empty-state" style="padding: 16px 0;">No active savings goals found.</p>
+                    </div>
+                </div>
+            </div>
 
-                <!-- Register Form -->
-                <form id="registerForm" class="auth-form" style="display: none;">
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="regName">Name <span class="required">*</span></label>
-                            <input type="text" id="regName" placeholder="Full Name" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="regEmail">Email <span class="required">*</span></label>
-                            <input type="email" id="regEmail" placeholder="user@example.com" required>
-                        </div>
+            <!-- Recent Transactions Widget -->
+            <div class="widget-card full-width">
+                <div class="widget-header">
+                    <h3>📜 Recent Transactions</h3>
+                    <div>
+                        <button type="button" class="btn btn-secondary btn-sm" style="margin-right: 6px;" onclick="reloadCurrentTransactions()">Refresh</button>
+                        <button type="button" class="widget-link-btn" onclick="navigateToSection('secHistory')">View All History →</button>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="regPassword">Password <span class="required">*</span></label>
-                            <input type="password" id="regPassword" minlength="6" placeholder="Min 6 characters" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="regPhone">Phone</label>
-                            <input type="text" id="regPhone" placeholder="e.g. 9876543210">
-                        </div>
-                        <div class="form-group form-btn-align">
-                            <button type="submit" class="btn btn-success">Register</button>
-                        </div>
-                    </div>
-                </form>
+                </div>
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashRecentTxTableBody">
+                            <tr><td colspan="8" class="empty-state">No transactions recorded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
-        <div class="main-grid">
-            <!-- 1. Create Account -->
-            <section class="card">
-                <h2>1. Create Account</h2>
-                <form id="createAccountForm">
-                    <div class="form-group">
-                        <label for="createName">Name <span class="required">*</span></label>
-                        <input type="text" id="createName" placeholder="e.g. John Doe" required>
+        <!-- ========================================================
+             SECTIONS 1 & 2: LOGIN & REGISTRATION
+             ======================================================== -->
+        <section id="secAuth" class="section-view">
+            <div class="card auth-card" style="max-width: 680px; margin: 0 auto;">
+                <div class="card-header-row">
+                    <h2>1 &amp; 2. User Authentication</h2>
+                    <span style="font-size: 0.85rem; color: #6b7280;">Secure Customer &amp; Admin Access</span>
+                </div>
+
+                <div id="authFormsContainer">
+                    <div class="auth-tabs">
+                        <button type="button" class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">1. Login</button>
+                        <button type="button" class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">2. Register</button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="createEmail">Email <span class="required">*</span></label>
-                        <input type="email" id="createEmail" placeholder="e.g. john@example.com" required>
-                    </div>
+                    <!-- 1. Login Form -->
+                    <form id="loginForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="loginEmail">Email Address <span class="required">*</span></label>
+                            <input type="email" id="loginEmail" placeholder="e.g. user@example.com or admin@bank.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password <span class="required">*</span></label>
+                            <input type="password" id="loginPassword" placeholder="Enter password" required>
+                        </div>
+                        <button type="submit" id="loginSubmitBtn" class="btn btn-primary">Login</button>
+                        <small class="helper-text" style="text-align: center; margin-top: 8px;">Admin test login: admin@bank.com / admin123</small>
+                    </form>
 
-                    <div class="form-group">
-                        <label for="createAccountNumber">Account Number</label>
-                        <input type="text" id="createAccountNumber" placeholder="e.g. ACC-1001 (optional)">
-                        <small class="helper-text">Leave blank to auto-generate</small>
-                    </div>
+                    <!-- 2. Register Form -->
+                    <form id="registerForm" class="auth-form" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="regName">Full Name <span class="required">*</span></label>
+                                <input type="text" id="regName" placeholder="e.g. Alice Smith" required>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="regEmail">Email Address <span class="required">*</span></label>
+                                <input type="email" id="regEmail" placeholder="e.g. alice@example.com" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="regPassword">Password <span class="required">*</span></label>
+                                <input type="password" id="regPassword" minlength="6" placeholder="Min 6 characters" required>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="regPhone">Phone Number</label>
+                                <input type="text" id="regPhone" placeholder="e.g. 9876543210">
+                            </div>
+                        </div>
+                        <button type="submit" id="registerSubmitBtn" class="btn btn-success">Create User Account</button>
+                    </form>
+                </div>
+            </div>
+        </section>
 
-                    <div class="form-group">
-                        <label for="createInitialBalance">Initial Balance <span class="required">*</span></label>
-                        <input type="number" id="createInitialBalance" step="0.01" min="0" placeholder="e.g. 5000.00" required>
-                    </div>
+        <!-- ========================================================
+             SECTION 4: ACCOUNT DETAILS & CREATION
+             ======================================================== -->
+        <section id="secAccount" class="section-view">
+            <div class="main-grid">
+                <!-- Create Account Card -->
+                <div class="card">
+                    <h2>4.1 Create Bank Account</h2>
+                    <form id="createAccountForm">
+                        <div class="form-group">
+                            <label for="createName">Account Holder Name <span class="required">*</span></label>
+                            <input type="text" id="createName" placeholder="e.g. John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="createEmail">Email Address <span class="required">*</span></label>
+                            <input type="email" id="createEmail" placeholder="e.g. john@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="createAccountNumber">Account Number (Optional)</label>
+                            <input type="text" id="createAccountNumber" placeholder="e.g. ACC-1001">
+                            <small class="helper-text">Leave blank to auto-generate unique number</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="createInitialBalance">Initial Balance (₹) <span class="required">*</span></label>
+                            <input type="number" id="createInitialBalance" step="0.01" min="0" placeholder="e.g. 5000.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="createUserId">Linked User ID (Optional)</label>
+                            <input type="number" id="createUserId" placeholder="e.g. 1 (auto-filled if logged in)">
+                        </div>
+                        <button type="submit" id="createBtn" class="btn btn-primary">Open Account</button>
+                    </form>
+                </div>
 
-                    <div class="form-group">
-                        <label for="createUserId">Linked User ID (Optional)</label>
-                        <input type="number" id="createUserId" placeholder="e.g. 1 (auto-filled if logged in)">
-                    </div>
-
-                    <button type="submit" id="createBtn" class="btn btn-primary">Create Account</button>
-                </form>
-            </section>
-
-            <!-- Right Column: Account Details, Deposit, Withdraw -->
-            <div class="details-and-actions">
-                <!-- 2. Account Details -->
-                <section class="card">
+                <!-- Account Lookup & Details Card -->
+                <div class="card">
                     <div class="card-header-row">
-                        <h2>2. Account Details</h2>
+                        <h2>4.2 Account Details</h2>
                         <form id="fetchAccountForm" class="lookup-inline-form">
-                            <input type="number" id="lookupAccountId" placeholder="Account ID" min="1" required>
-                            <button type="submit" class="btn btn-secondary btn-sm">Load</button>
+                            <input type="text" id="lookupAccountId" placeholder="ID or ACC No." style="width: 140px;" required>
+                            <button type="submit" id="lookupAccountBtn" class="btn btn-secondary btn-sm">Load</button>
                         </form>
                     </div>
 
@@ -134,7 +322,7 @@
                             <span class="detail-value" id="detailAccountId">—</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Name</span>
+                            <span class="detail-label">Holder Name</span>
                             <span class="detail-value" id="detailName">—</span>
                         </div>
                         <div class="detail-item">
@@ -146,127 +334,438 @@
                             <span class="detail-value" id="detailUserId">—</span>
                         </div>
                         <div class="detail-item full-span">
-                            <span class="detail-label">Balance</span>
+                            <span class="detail-label">Current Balance</span>
                             <span class="detail-value balance-value" id="detailBalance">—</span>
                         </div>
                     </div>
-                </section>
 
-                <div class="operations-grid">
-                    <!-- 3. Deposit -->
-                    <section class="card">
-                        <h2>3. Deposit</h2>
-                        <form id="depositForm">
-                            <div class="form-group">
-                                <label for="depositAmount">Amount <span class="required">*</span></label>
-                                <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="e.g. 2000.00" required>
-                            </div>
-                            <button type="submit" id="depositBtn" class="btn btn-success">Deposit</button>
-                        </form>
-                    </section>
-
-                    <!-- 4. Withdraw -->
-                    <section class="card">
-                        <h2>4. Withdraw</h2>
-                        <form id="withdrawForm">
-                            <div class="form-group">
-                                <label for="withdrawAmount">Amount <span class="required">*</span></label>
-                                <input type="number" id="withdrawAmount" step="0.01" min="0.01" placeholder="e.g. 1000.00" required>
-                            </div>
-                            <button type="submit" id="withdrawBtn" class="btn btn-warning">Withdraw</button>
-                        </form>
-                    </section>
+                    <div style="margin-top: 18px; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigateToSection('secDashboard')">Go to Dashboard</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigateToSection('secHistory')">View History</button>
+                    </div>
                 </div>
-
-                <!-- 5. Fund Transfer -->
-                <section class="card">
-                    <h2>5. Fund Transfer</h2>
-                    <form id="transferForm">
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="transferFrom">From Account (ID or No.) <span class="required">*</span></label>
-                                <input type="text" id="transferFrom" placeholder="Sender Account ID or Number" required>
-                                <small class="helper-text">Auto-filled from active account</small>
-                            </div>
-                            <div class="form-group flex-1">
-                                <label for="transferTo">To Account (ID or No.) <span class="required">*</span></label>
-                                <input type="text" id="transferTo" placeholder="Receiver Account ID or Number" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="transferAmount">Amount <span class="required">*</span></label>
-                                <input type="number" id="transferAmount" step="0.01" min="0.01" placeholder="e.g. 500.00" required>
-                            </div>
-                            <div class="form-group flex-1">
-                                <label for="transferDescription">Description</label>
-                                <input type="text" id="transferDescription" placeholder="e.g. Payment / Rent">
-                            </div>
-                        </div>
-                        <button type="submit" id="transferBtn" class="btn btn-transfer">Transfer Money</button>
-                    </form>
-                </section>
-            </div>
-        </div>
-
-        <!-- 6. Personal Finance Analytics -->
-        <section class="card full-width">
-            <div class="card-header-row">
-                <h2>6. Personal Finance Analytics</h2>
-                <button type="button" id="refreshAnalyticsBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentAnalytics()">Refresh</button>
-            </div>
-            <div class="analytics-grid">
-                <div class="analytics-card">
-                    <span class="analytics-label">Total Deposits</span>
-                    <span class="analytics-value text-success" id="analyticsDeposits">₹0.00</span>
-                </div>
-                <div class="analytics-card">
-                    <span class="analytics-label">Total Withdrawals</span>
-                    <span class="analytics-value text-danger" id="analyticsWithdrawals">₹0.00</span>
-                </div>
-                <div class="analytics-card">
-                    <span class="analytics-label">Total Transfers</span>
-                    <span class="analytics-value text-purple" id="analyticsTransfers">₹0.00</span>
-                </div>
-                <div class="analytics-card">
-                    <span class="analytics-label">Transaction Count</span>
-                    <span class="analytics-value text-info" id="analyticsCount">0</span>
-                </div>
-            </div>
-            <div id="analyticsSubrow" class="analytics-subrow" style="margin-top: 14px;">
-                <span>Total Received: <strong id="analyticsReceived" class="text-success">₹0.00</strong></span>
-                <span>Total Spent: <strong id="analyticsSpent" class="text-danger">₹0.00</strong></span>
-                <span>Net Savings: <strong id="analyticsNet" class="text-primary">₹0.00</strong></span>
             </div>
         </section>
 
-        <!-- 7. Transaction History -->
-        <section class="card full-width">
-            <div class="card-header-row">
-                <h2>7. Transaction History</h2>
-                <button type="button" id="refreshTxBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentTransactions()">Refresh</button>
+        <!-- ========================================================
+             SECTION 5: DEPOSIT MONEY
+             ======================================================== -->
+        <section id="secDeposit" class="section-view">
+            <div class="card" style="max-width: 580px; margin: 0 auto;">
+                <h2>5. Deposit Money</h2>
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div>Active Target Account: <strong id="depositAccDisplay">—</strong></div>
+                    <div>Current Balance: <strong id="depositBalDisplay" class="text-success">—</strong></div>
+                </div>
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="depositAmount">Deposit Amount (₹) <span class="required">*</span></label>
+                        <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="e.g. 5000.00" required>
+                    </div>
+                    <button type="submit" id="depositBtn" class="btn btn-success">Deposit Funds</button>
+                </form>
             </div>
+        </section>
 
-            <div class="table-container">
-                <table class="transaction-table" id="transactionTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>From</th>
-                            <th>To</th>
-                            <th>Description</th>
-                            <th>Status</th>
-                            <th>Date & Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactionTableBody">
-                        <tr>
-                            <td colspan="8" class="empty-state">No account selected. Create or load an account to view transactions.</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- ========================================================
+             SECTION 6: WITHDRAW MONEY
+             ======================================================== -->
+        <section id="secWithdraw" class="section-view">
+            <div class="card" style="max-width: 580px; margin: 0 auto;">
+                <h2>6. Withdraw Money</h2>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div>Active Source Account: <strong id="withdrawAccDisplay">—</strong></div>
+                    <div>Available Balance: <strong id="withdrawBalDisplay" class="text-success">—</strong></div>
+                </div>
+                <form id="withdrawForm">
+                    <div class="form-group">
+                        <label for="withdrawAmount">Withdrawal Amount (₹) <span class="required">*</span></label>
+                        <input type="number" id="withdrawAmount" step="0.01" min="0.01" placeholder="e.g. 1500.00" required>
+                        <small class="helper-text">Withdrawal is protected against overdrafts</small>
+                    </div>
+                    <button type="submit" id="withdrawBtn" class="btn btn-warning">Withdraw Funds</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 7: FUND TRANSFER
+             ======================================================== -->
+        <section id="secTransfer" class="section-view">
+            <div class="card" style="max-width: 680px; margin: 0 auto;">
+                <h2>7. Fund Transfer</h2>
+                <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 14px;">
+                    Transfer money securely between accounts. Executed with atomic transaction rollback.
+                </p>
+                <form id="transferForm">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="transferFrom">Sender Account (ID or Number) <span class="required">*</span></label>
+                            <input type="text" id="transferFrom" placeholder="Sender Account ID or Number" required>
+                            <small class="helper-text">Defaults to currently active account</small>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="transferTo">Recipient Account (ID or Number) <span class="required">*</span></label>
+                            <input type="text" id="transferTo" placeholder="Recipient Account ID or Number" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="transferAmount">Amount (₹) <span class="required">*</span></label>
+                            <input type="number" id="transferAmount" step="0.01" min="0.01" placeholder="e.g. 2000.00" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="transferDescription">Payment Description</label>
+                            <input type="text" id="transferDescription" placeholder="e.g. Bill Payment / Rent">
+                        </div>
+                    </div>
+                    <button type="submit" id="transferBtn" class="btn btn-transfer">Send Transfer</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 8: TRANSACTION HISTORY
+             ======================================================== -->
+        <section id="secHistory" class="section-view">
+            <div class="card full-width">
+                <div class="card-header-row">
+                    <h2>8. Transaction History</h2>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" id="refreshTxBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentTransactions()">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="transaction-table" id="transactionTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Date &amp; Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">No account selected. Create or load an account to view transactions.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 9: PERSONAL FINANCE ANALYTICS
+             ======================================================== -->
+        <section id="secAnalytics" class="section-view">
+            <div class="card full-width">
+                <div class="card-header-row">
+                    <h2>9. Personal Finance Analytics</h2>
+                    <button type="button" id="refreshAnalyticsBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentAnalytics()">Refresh Analytics</button>
+                </div>
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Deposits</span>
+                        <span class="analytics-value text-success" id="analyticsDeposits">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Withdrawals</span>
+                        <span class="analytics-value text-danger" id="analyticsWithdrawals">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Transfers</span>
+                        <span class="analytics-value text-purple" id="analyticsTransfers">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Transaction Count</span>
+                        <span class="analytics-value text-info" id="analyticsCount">0</span>
+                    </div>
+                </div>
+                <div id="analyticsSubrow" class="analytics-subrow" style="margin-top: 16px;">
+                    <span>Total Received: <strong id="analyticsReceived" class="text-success">₹0.00</strong></span>
+                    <span>Total Spent: <strong id="analyticsSpent" class="text-danger">₹0.00</strong></span>
+                    <span>Net Savings: <strong id="analyticsNet" class="text-primary">₹0.00</strong></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 10: SAVINGS GOALS
+             ======================================================== -->
+        <section id="secGoals" class="section-view">
+            <div class="card full-width">
+                <div class="card-header-row">
+                    <h2>10. Savings Goals</h2>
+                    <button type="button" id="refreshGoalsBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentSavingsGoals()">Refresh Goals</button>
+                </div>
+
+                <!-- Create Goal Form -->
+                <form id="createGoalForm" style="margin-bottom: 24px;">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="goalName">Goal Name <span class="required">*</span></label>
+                            <input type="text" id="goalName" placeholder="e.g. New Laptop" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="goalTargetAmount">Target Amount (₹) <span class="required">*</span></label>
+                            <input type="number" id="goalTargetAmount" step="0.01" min="0.01" placeholder="e.g. 50000.00" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="goalCurrentAmount">Current Saved (₹)</label>
+                            <input type="number" id="goalCurrentAmount" step="0.01" min="0" placeholder="e.g. 5000.00">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="goalTargetDate">Target Date</label>
+                            <input type="date" id="goalTargetDate">
+                        </div>
+                        <div class="form-group form-btn-align">
+                            <button type="submit" id="createGoalBtn" class="btn btn-primary">Create Goal</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-container">
+                    <table class="transaction-table" id="savingsGoalTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Goal Name</th>
+                                <th>Target Amount</th>
+                                <th>Current Amount</th>
+                                <th>Progress</th>
+                                <th>Target Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="savingsGoalTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 11: ADMIN DASHBOARD
+             ======================================================== -->
+        <section id="secAdmin" class="section-view">
+            <div class="card full-width admin-card">
+                <div class="card-header-row">
+                    <h2>🛡️ 11. Admin Management &amp; System Dashboard</h2>
+                    <div class="admin-top-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdminDashboardData()">Refresh Dashboard</button>
+                    </div>
+                </div>
+
+                <!-- Admin KPI Stats Grid -->
+                <div class="analytics-grid admin-stats-grid">
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Users</span>
+                        <span class="analytics-value text-info" id="adminTotalUsers">0</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Accounts</span>
+                        <span class="analytics-value text-primary" id="adminTotalAccounts">0</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Transactions</span>
+                        <span class="analytics-value text-purple" id="adminTotalTransactions">0</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total System Balance</span>
+                        <span class="analytics-value text-success" id="adminTotalBalance">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Deposits</span>
+                        <span class="analytics-value text-success" id="adminTotalDeposits">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Withdrawals</span>
+                        <span class="analytics-value text-danger" id="adminTotalWithdrawals">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Total Transfers</span>
+                        <span class="analytics-value text-warning" id="adminTotalTransfers">₹0.00</span>
+                    </div>
+                    <div class="analytics-card">
+                        <span class="analytics-label">Savings Goals</span>
+                        <span class="analytics-value text-info" id="adminTotalGoals">0</span>
+                    </div>
+                </div>
+
+                <!-- Admin Sub Navigation Tabs -->
+                <div class="admin-tabs" style="margin-top: 20px; display: flex; gap: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">
+                    <button type="button" class="tab-btn active" id="adminUsersTabBtn" onclick="switchAdminTab('users')">👥 User / Customer List</button>
+                    <button type="button" class="tab-btn" id="adminAccountsTabBtn" onclick="switchAdminTab('accounts')">💳 Account List</button>
+                    <button type="button" class="tab-btn" id="adminTransactionsTabBtn" onclick="switchAdminTab('transactions')">🔍 Transaction Monitoring</button>
+                    <button type="button" class="tab-btn" id="adminLogsTabBtn" onclick="switchAdminTab('logs')">📋 Activity Logs</button>
+                </div>
+
+                <!-- Users Tab View -->
+                <div id="adminUsersView" class="admin-tab-content" style="margin-top: 14px;">
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Role</th>
+                                    <th>Registered At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                                <tr><td colspan="6" class="empty-state">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Accounts Tab View -->
+                <div id="adminAccountsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Account Number</th>
+                                    <th>Account Holder</th>
+                                    <th>Email</th>
+                                    <th>Balance</th>
+                                    <th>User ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAccountsTableBody">
+                                <tr><td colspan="6" class="empty-state">Loading accounts...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Transactions Tab View -->
+                <div id="adminTransactionsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Acc ID</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Sender</th>
+                                    <th>Receiver</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTransactionsTableBody">
+                                <tr><td colspan="9" class="empty-state">Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Activity Logs Tab View -->
+                <div id="adminLogsView" class="admin-tab-content" style="display: none; margin-top: 14px;">
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Action</th>
+                                    <th>Performed By</th>
+                                    <th>Details</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLogsTableBody">
+                                <tr><td colspan="5" class="empty-state">Loading activity logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 12: SOAP ACCOUNT STATEMENT
+             ======================================================== -->
+        <section id="secSoap" class="section-view">
+            <div class="card full-width">
+                <div class="card-header-row">
+                    <h2>12. SOAP Web Service: Account Statement</h2>
+                    <div>
+                        <a href="/ws/statement.wsdl" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none; display: inline-block;">View WSDL</a>
+                    </div>
+                </div>
+                <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 14px;">
+                    Demonstrates XML SOAP 1.1 / Spring-WS contract-first integration. Queries the SOAP endpoint at <code>/ws</code> using an XML Envelope.
+                </p>
+
+                <form id="soapStatementForm" class="lookup-inline-form" style="margin-bottom: 16px; display: flex; gap: 8px;">
+                    <input type="text" id="soapAccountInput" placeholder="Account ID or Account Number" style="width: 260px;" required>
+                    <button type="submit" id="soapSubmitBtn" class="btn btn-primary btn-sm" style="width: auto;">Generate SOAP Statement</button>
+                </form>
+
+                <div id="soapStatementResult" style="display: none;">
+                    <div class="details-grid" style="margin-bottom: 16px;">
+                        <div class="detail-item">
+                            <span class="detail-label">Account Number</span>
+                            <span class="detail-value" id="soapResAccountNo">—</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Account Holder</span>
+                            <span class="detail-value" id="soapResHolder">—</span>
+                        </div>
+                        <div class="detail-item full-span">
+                            <span class="detail-label">Current Balance</span>
+                            <span class="detail-value balance-value" id="soapResBalance">—</span>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size: 1rem; margin-bottom: 8px; color: #374151;">Statement Transactions</h3>
+                    <div class="table-container" style="margin-bottom: 16px;">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Sender</th>
+                                    <th>Receiver</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="soapTransactionsTableBody">
+                                <tr><td colspan="8" class="empty-state">No transactions in statement.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Raw SOAP XML Accordion -->
+                    <details style="margin-top: 10px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                        <summary style="cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #4b5563;">View Raw SOAP XML Request &amp; Response Envelopes</summary>
+                        <div style="margin-top: 10px;">
+                            <label style="font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 4px;">SOAP Request Envelope (sent to /ws):</label>
+                            <pre id="soapRawRequest" style="background: #1e293b; color: #f8fafc; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem; margin-bottom: 10px;"></pre>
+                            <label style="font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 4px;">SOAP Response Envelope (received from /ws):</label>
+                            <pre id="soapRawResponse" style="background: #1e293b; color: #f8fafc; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;"></pre>
+                        </div>
+                    </details>
+                </div>
             </div>
         </section>
     </div>

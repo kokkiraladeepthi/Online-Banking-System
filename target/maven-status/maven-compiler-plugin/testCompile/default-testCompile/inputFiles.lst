@@ -2,5 +2,8 @@ D:\Deskpot\BANK\src\test\java\com\bank\mvp\aspect\LoggingAspectTest.java
 D:\Deskpot\BANK\src\test\java\com\bank\mvp\dto\DtoValidationTest.java
 D:\Deskpot\BANK\src\test\java\com\bank\mvp\exception\ApiExceptionHandlerTest.java
 D:\Deskpot\BANK\src\test\java\com\bank\mvp\service\AccountServiceTest.java
+D:\Deskpot\BANK\src\test\java\com\bank\mvp\service\AdminServiceTest.java
 D:\Deskpot\BANK\src\test\java\com\bank\mvp\service\AnalyticsServiceTest.java
+D:\Deskpot\BANK\src\test\java\com\bank\mvp\service\SavingsGoalServiceTest.java
 D:\Deskpot\BANK\src\test\java\com\bank\mvp\service\UserServiceTest.java
+D:\Deskpot\BANK\src\test\java\com\bank\mvp\soap\StatementEndpointTest.java

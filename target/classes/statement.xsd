@@ -1,0 +1,40 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://com.bank.mvp/soap/statement"
+           targetNamespace="http://com.bank.mvp/soap/statement"
+           elementFormDefault="qualified">
+
+    <xs:element name="getStatementRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="accountId" type="xs:long" minOccurs="0"/>
+                <xs:element name="accountNumber" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="getStatementResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="accountNumber" type="xs:string"/>
+                <xs:element name="accountHolder" type="xs:string"/>
+                <xs:element name="currentBalance" type="xs:decimal"/>
+                <xs:element name="transactionDetails" type="tns:soapTransaction" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="soapTransaction">
+        <xs:sequence>
+            <xs:element name="id" type="xs:long"/>
+            <xs:element name="type" type="xs:string"/>
+            <xs:element name="amount" type="xs:decimal"/>
+            <xs:element name="date" type="xs:string"/>
+            <xs:element name="status" type="xs:string"/>
+            <xs:element name="senderAccount" type="xs:string" minOccurs="0"/>
+            <xs:element name="receiverAccount" type="xs:string" minOccurs="0"/>
+            <xs:element name="description" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>
+
