@@ -44,6 +44,11 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getAccountById(id));
     }
 
+    @GetMapping("/accounts/number/{accountNumber}")
+    public ResponseEntity<AccountResponse> getAccountByNumber(@PathVariable String accountNumber) {
+        return ResponseEntity.ok(accountService.getAccountByAccountNumber(accountNumber));
+    }
+
     @PostMapping("/accounts/{id}/deposit")
     public ResponseEntity<AccountResponse> deposit(@PathVariable Long id, @Valid @RequestBody MoneyRequest request) {
         return ResponseEntity.ok(accountService.deposit(id, request));

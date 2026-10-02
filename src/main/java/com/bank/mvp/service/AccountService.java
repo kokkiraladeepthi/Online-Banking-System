@@ -97,6 +97,12 @@ public class AccountService {
         return mapToAccountResponse(account);
     }
 
+    public AccountResponse getAccountByAccountNumber(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with account number: " + accountNumber));
+        return mapToAccountResponse(account);
+    }
+
     @Transactional
     public AccountResponse deposit(Long accountId, MoneyRequest request) {
         Account account = getAccountEntity(accountId);

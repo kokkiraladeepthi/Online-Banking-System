@@ -1,96 +1,56 @@
+// ========================================================
+// Online Banking System - Frontend Application Logic
+// ========================================================
+
 // Base API URL configuration
 const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
     ? (window.location.port === '8080' ? '/api' : 'http://localhost:8080/api')
     : 'http://localhost:8080/api';
 
-// State
-let currentAccountId = null;
+// Global State
+let currentAccount = null;
 let loggedInUser = null;
+let currentAdminTab = 'users';
 
-// DOM Elements
+// Notification banner helpers
 const statusBanner = document.getElementById('statusBanner');
 const statusText = document.getElementById('statusText');
 
-// Auth DOM Elements
-const loggedInUserBar = document.getElementById('loggedInUserBar');
-const loggedInUserInfo = document.getElementById('loggedInUserInfo');
-const authFormsContainer = document.getElementById('authFormsContainer');
-const loginTabBtn = document.getElementById('loginTabBtn');
-const registerTabBtn = document.getElementById('registerTabBtn');
-const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
-const loginEmail = document.getElementById('loginEmail');
-const loginPassword = document.getElementById('loginPassword');
-const regName = document.getElementById('regName');
-const regEmail = document.getElementById('regEmail');
-const regPassword = document.getElementById('regPassword');
-const regPhone = document.getElementById('regPhone');
-
-// Account DOM Elements
-const createAccountForm = document.getElementById('createAccountForm');
-const createName = document.getElementById('createName');
-const createEmail = document.getElementById('createEmail');
-const createAccountNumber = document.getElementById('createAccountNumber');
-const createInitialBalance = document.getElementById('createInitialBalance');
-const createUserId = document.getElementById('createUserId');
-
-const fetchAccountForm = document.getElementById('fetchAccountForm');
-const lookupAccountId = document.getElementById('lookupAccountId');
-
-const detailAccountId = document.getElementById('detailAccountId');
-const detailName = document.getElementById('detailName');
-const detailAccountNumber = document.getElementById('detailAccountNumber');
-const detailUserId = document.getElementById('detailUserId');
-const detailBalance = document.getElementById('detailBalance');
-
-const depositForm = document.getElementById('depositForm');
-const depositAmount = document.getElementById('depositAmount');
-
-const withdrawForm = document.getElementById('withdrawForm');
-const withdrawAmount = document.getElementById('withdrawAmount');
-
-const transferForm = document.getElementById('transferForm');
-const transferFrom = document.getElementById('transferFrom');
-const transferTo = document.getElementById('transferTo');
-const transferAmount = document.getElementById('transferAmount');
-const transferDescription = document.getElementById('transferDescription');
-
-const transactionTableBody = document.getElementById('transactionTableBody');
-
-// Analytics DOM Elements
-const analyticsDeposits = document.getElementById('analyticsDeposits');
-const analyticsWithdrawals = document.getElementById('analyticsWithdrawals');
-const analyticsTransfers = document.getElementById('analyticsTransfers');
-const analyticsCount = document.getElementById('analyticsCount');
-const analyticsReceived = document.getElementById('analyticsReceived');
-const analyticsSpent = document.getElementById('analyticsSpent');
-const analyticsNet = document.getElementById('analyticsNet');
-
-// Savings Goals DOM Elements
-const createGoalForm = document.getElementById('createGoalForm');
-const goalName = document.getElementById('goalName');
-const goalTargetAmount = document.getElementById('goalTargetAmount');
-const goalCurrentAmount = document.getElementById('goalCurrentAmount');
-const goalTargetDate = document.getElementById('goalTargetDate');
-const savingsGoalTableBody = document.getElementById('savingsGoalTableBody');
-
-// Notification banner helpers
 function showStatus(message, type = 'success') {
+    if (!statusBanner || !statusText) return;
     statusBanner.className = `status-banner ${type}`;
     statusText.textContent = message;
     statusBanner.style.display = 'flex';
+    // Auto-scroll to top so status is immediately visible
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function hideStatus() {
+    if (!statusBanner) return;
     statusBanner.style.display = 'none';
-    statusText.textContent = '';
+    if (statusText) statusText.textContent = '';
+}
+
+// Button Loading State Helper
+function setButtonLoading(button, isLoading, normalText = null) {
+    if (!button) return;
+    if (isLoading) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = 'Processing...';
+        button.disabled = true;
+        button.classList.add('btn-loading');
+    } else {
+        button.textContent = normalText || button.dataset.originalText || 'Submit';
+        button.disabled = false;
+        button.classList.remove('btn-loading');
+    }
 }
 
 // Formatters
 function formatCurrency(val) {
-    if (val === null || val === undefined) return '—';
+    if (val === null || val === undefined || isNaN(Number(val))) return '—';
     const num = Number(val);
-    return isNaN(num) ? '—' : '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDateTime(isoString) {
@@ -100,116 +60,550 @@ function formatDateTime(isoString) {
     return date.toLocaleString();
 }
 
-// Auth Tab Switching
-function switchAuthTab(tab) {
-    if (tab === 'login') {
-        loginTabBtn.classList.add('active');
-        registerTabBtn.classList.remove('active');
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+}
+
+// ========================================================
+// 1. Navigation Controller (Switches between all 11 sections)
+// ========================================================
+function navigateToSection(sectionId) {
+    hideStatus();
+    // Hide all section views
+    document.querySelectorAll('.section-view').forEach(view => {
+        view.classList.remove('active-section');
+    });
+
+    // Show target section view
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.classList.add('active-section');
+    }
+
+    // Update active nav button
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === sectionId);
+    });
+
+    // Lazy load data for specific sections
+    if (sectionId === 'secAdmin') {
+        loadAdminDashboardData();
+    } else if (sectionId === 'secHistory' && currentAccount) {
+        loadTransactions(currentAccount.id);
+    } else if (sectionId === 'secAnalytics' && currentAccount) {
+        loadAnalytics(currentAccount.id);
+    } else if (sectionId === 'secGoals' && currentAccount) {
+        loadSavingsGoals(currentAccount.id);
+    }
+}
+
+// ========================================================
+// 2. Active Account Management & UI Synchronization
+// ========================================================
+function updateAllAccountViews(account) {
+    currentAccount = account;
+
+    if (!account) {
+        // Customer Dashboard Hero
+        setText('dashAccountNo', 'ACC-NONE');
+        setText('dashHolder', 'No account loaded');
+        setText('dashAccountIdBadge', 'Account ID: —');
+        setText('dashBalance', '₹0.00');
+
+        // Quick Action targets
+        setText('quickDepositTargetAcc', '—');
+        setText('quickWithdrawTargetAcc', '—');
+        setText('quickTransferSourceAcc', '—');
+
+        // Section 4: Details
+        setText('detailAccountId', '—');
+        setText('detailName', '—');
+        setText('detailAccountNumber', '—');
+        setText('detailUserId', '—');
+        setText('detailBalance', '—');
+
+        // Section 5 & 6
+        setText('depositAccDisplay', '—');
+        setText('depositBalDisplay', '—');
+        setText('withdrawAccDisplay', '—');
+        setText('withdrawBalDisplay', '—');
+
+        // Section 7
+        const tf = document.getElementById('transferFrom');
+        if (tf) tf.value = '';
+
+        // Reset widgets
+        resetDashboardWidgets();
+        return;
+    }
+
+    const accIdentifier = `${account.accountNumber} (#${account.id})`;
+    const balFormatted = formatCurrency(account.balance);
+
+    // 1. Customer Dashboard Hero
+    setText('dashAccountNo', account.accountNumber);
+    setText('dashHolder', account.name || 'Account Holder');
+    setText('dashAccountIdBadge', `Account ID: ${account.id}${account.userId ? ' | User ID: ' + account.userId : ''}`);
+    setText('dashBalance', balFormatted);
+
+    // 2. Quick Action target indicators
+    setText('quickDepositTargetAcc', `${account.accountNumber} (Bal: ${balFormatted})`);
+    setText('quickWithdrawTargetAcc', `${account.accountNumber} (Bal: ${balFormatted})`);
+    setText('quickTransferSourceAcc', `${account.accountNumber} (Bal: ${balFormatted})`);
+
+    // 3. Section 4: Dedicated Account Details
+    setText('detailAccountId', account.id);
+    setText('detailName', account.name);
+    setText('detailAccountNumber', account.accountNumber);
+    setText('detailUserId', account.userId !== undefined && account.userId !== null ? account.userId : 'None');
+    setText('detailBalance', balFormatted);
+
+    // 4. Section 5 & 6: Dedicated Deposit & Withdraw Cards
+    setText('depositAccDisplay', accIdentifier);
+    setText('depositBalDisplay', balFormatted);
+    setText('withdrawAccDisplay', accIdentifier);
+    setText('withdrawBalDisplay', balFormatted);
+
+    // 5. Section 7: Fund Transfer From
+    const transferFrom = document.getElementById('transferFrom');
+    if (transferFrom) transferFrom.value = account.accountNumber || account.id;
+
+    // 6. Section 12: SOAP statement input
+    const soapAccountInput = document.getElementById('soapAccountInput');
+    if (soapAccountInput) soapAccountInput.value = account.accountNumber || account.id;
+
+    // 7. Load associated live records for active account
+    loadTransactions(account.id);
+    loadAnalytics(account.id);
+    loadSavingsGoals(account.id);
+}
+
+function setText(elementId, text) {
+    const el = document.getElementById(elementId);
+    if (el) el.textContent = text;
+}
+
+function resetDashboardWidgets() {
+    setText('dashAnalyticsDeposits', '₹0.00');
+    setText('dashAnalyticsWithdrawals', '₹0.00');
+    setText('dashAnalyticsTransfers', '₹0.00');
+    setText('dashAnalyticsNet', '₹0.00');
+
+    setText('analyticsDeposits', '₹0.00');
+    setText('analyticsWithdrawals', '₹0.00');
+    setText('analyticsTransfers', '₹0.00');
+    setText('analyticsCount', '0');
+    setText('analyticsReceived', '₹0.00');
+    setText('analyticsSpent', '₹0.00');
+    setText('analyticsNet', '₹0.00');
+
+    const goalsContainer = document.getElementById('dashGoalsContainer');
+    if (goalsContainer) {
+        goalsContainer.innerHTML = '<p class="empty-state" style="padding: 16px 0;">No active savings goals found.</p>';
+    }
+
+    const txBody = document.getElementById('transactionTableBody');
+    if (txBody) {
+        txBody.innerHTML = '<tr><td colspan="8" class="empty-state">No account selected. Create or load an account to view transactions.</td></tr>';
+    }
+
+    const dashTxBody = document.getElementById('dashRecentTxTableBody');
+    if (dashTxBody) {
+        dashTxBody.innerHTML = '<tr><td colspan="8" class="empty-state">No transactions recorded.</td></tr>';
+    }
+
+    const goalsTableBody = document.getElementById('savingsGoalTableBody');
+    if (goalsTableBody) {
+        goalsTableBody.innerHTML = '<tr><td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td></tr>';
+    }
+}
+
+// Fetch Account by ID or Account Number
+async function loadAccountByQuery(query) {
+    if (!query) return null;
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return null;
+
+    try {
+        const isNumeric = /^\d+$/.test(cleanQuery);
+        const url = isNumeric 
+            ? `${API_BASE}/accounts/${cleanQuery}`
+            : `${API_BASE}/accounts/number/${encodeURIComponent(cleanQuery)}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `Account "${cleanQuery}" not found.`);
+        }
+
+        updateAllAccountViews(data);
+        return data;
+    } catch (err) {
+        showStatus(err.message, 'error');
+        return null;
+    }
+}
+
+// Dashboard Account Switcher handler
+async function handleDashAccountSwitch(e) {
+    e.preventDefault();
+    hideStatus();
+    const input = document.getElementById('dashSwitchInput');
+    const btn = document.getElementById('dashSwitchBtn');
+    if (!input || !input.value.trim()) return;
+
+    setButtonLoading(btn, true);
+    const acc = await loadAccountByQuery(input.value);
+    setButtonLoading(btn, false, 'Switch');
+
+    if (acc) {
+        showStatus(`Switched active account to ${acc.accountNumber} (#${acc.id})`, 'success');
+        input.value = '';
+    }
+}
+
+// ========================================================
+// 3. Customer Dashboard Quick Actions
+// ========================================================
+let activeQuickAction = null;
+
+function toggleQuickAction(action) {
+    const panels = {
+        deposit: document.getElementById('quickDepositPanel'),
+        withdraw: document.getElementById('quickWithdrawPanel'),
+        transfer: document.getElementById('quickTransferPanel')
+    };
+
+    const buttons = {
+        deposit: document.getElementById('btnQuickDepositToggle'),
+        withdraw: document.getElementById('btnQuickWithdrawToggle'),
+        transfer: document.getElementById('btnQuickTransferToggle')
+    };
+
+    if (activeQuickAction === action || !action) {
+        // Close all
+        Object.values(panels).forEach(p => p && p.classList.remove('active'));
+        Object.values(buttons).forEach(b => b && b.classList.remove('active'));
+        activeQuickAction = null;
+        return;
+    }
+
+    if (!currentAccount) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+
+    activeQuickAction = action;
+    Object.keys(panels).forEach(key => {
+        if (panels[key]) panels[key].classList.toggle('active', key === action);
+        if (buttons[key]) buttons[key].classList.toggle('active', key === action);
+    });
+}
+
+// Quick Deposit
+async function handleQuickDeposit(e) {
+    e.preventDefault();
+    hideStatus();
+
+    if (!currentAccount) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+
+    const amountInput = document.getElementById('quickDepositAmount');
+    const submitBtn = document.getElementById('quickDepositSubmitBtn');
+    const amount = parseFloat(amountInput.value);
+
+    if (isNaN(amount) || amount <= 0) {
+        showStatus('Deposit amount must be greater than zero.', 'error');
+        return;
+    }
+
+    setButtonLoading(submitBtn, true);
+
+    try {
+        const res = await fetch(`${API_BASE}/accounts/${currentAccount.id}/deposit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Deposit failed.');
+
+        updateAllAccountViews(data);
+        showStatus(`Deposited ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
+        amountInput.value = '';
+        toggleQuickAction(null);
+    } catch (err) {
+        showStatus(err.message, 'error');
+    } finally {
+        setButtonLoading(submitBtn, false, 'Deposit');
+    }
+}
+
+// Quick Withdraw
+async function handleQuickWithdraw(e) {
+    e.preventDefault();
+    hideStatus();
+
+    if (!currentAccount) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+
+    const amountInput = document.getElementById('quickWithdrawAmount');
+    const submitBtn = document.getElementById('quickWithdrawSubmitBtn');
+    const amount = parseFloat(amountInput.value);
+
+    if (isNaN(amount) || amount <= 0) {
+        showStatus('Withdraw amount must be greater than zero.', 'error');
+        return;
+    }
+
+    setButtonLoading(submitBtn, true);
+
+    try {
+        const res = await fetch(`${API_BASE}/accounts/${currentAccount.id}/withdraw`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Withdrawal failed.');
+
+        updateAllAccountViews(data);
+        showStatus(`Withdrew ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
+        amountInput.value = '';
+        toggleQuickAction(null);
+    } catch (err) {
+        showStatus(err.message, 'error');
+    } finally {
+        setButtonLoading(submitBtn, false, 'Withdraw');
+    }
+}
+
+// Quick Transfer
+async function handleQuickTransfer(e) {
+    e.preventDefault();
+    hideStatus();
+
+    if (!currentAccount) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+
+    const toInput = document.getElementById('quickTransferTo');
+    const amountInput = document.getElementById('quickTransferAmount');
+    const descInput = document.getElementById('quickTransferDesc');
+    const submitBtn = document.getElementById('quickTransferSubmitBtn');
+
+    const toVal = toInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const desc = descInput.value.trim();
+
+    if (!toVal) {
+        showStatus('Receiver account (ID or Number) is required.', 'error');
+        return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+        showStatus('Transfer amount must be greater than zero.', 'error');
+        return;
+    }
+
+    const payload = {
+        fromAccountId: currentAccount.id,
+        fromAccountNumber: currentAccount.accountNumber,
+        amount: amount,
+        description: desc || null
+    };
+
+    if (/^\d+$/.test(toVal)) {
+        payload.toAccountId = parseInt(toVal, 10);
+        payload.toAccountNumber = toVal;
     } else {
-        registerTabBtn.classList.add('active');
-        loginTabBtn.classList.remove('active');
-        registerForm.style.display = 'block';
-        loginForm.style.display = 'none';
+        payload.toAccountNumber = toVal;
+    }
+
+    setButtonLoading(submitBtn, true);
+
+    try {
+        const res = await fetch(`${API_BASE}/transactions/transfer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Transfer failed.');
+
+        showStatus(`Transfer of ${formatCurrency(amount)} successful! Ref ID: ${data.transactionId}. Sender Balance: ${formatCurrency(data.senderBalance)}`, 'success');
+        toInput.value = '';
+        amountInput.value = '';
+        descInput.value = '';
+        toggleQuickAction(null);
+
+        // Reload account details to reflect new balance
+        await loadAccountByQuery(String(currentAccount.id));
+    } catch (err) {
+        showStatus(err.message, 'error');
+    } finally {
+        setButtonLoading(submitBtn, false, 'Send Money');
+    }
+}
+
+// ========================================================
+// 4. Sections 1 & 2: User Authentication (Login & Register)
+// ========================================================
+function switchAuthTab(tab) {
+    const loginTabBtn = document.getElementById('loginTabBtn');
+    const registerTabBtn = document.getElementById('registerTabBtn');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    if (tab === 'login') {
+        if (loginTabBtn) loginTabBtn.classList.add('active');
+        if (registerTabBtn) registerTabBtn.classList.remove('active');
+        if (loginForm) loginForm.style.display = 'block';
+        if (registerForm) registerForm.style.display = 'none';
+    } else {
+        if (registerTabBtn) registerTabBtn.classList.add('active');
+        if (loginTabBtn) loginTabBtn.classList.remove('active');
+        if (registerForm) registerForm.style.display = 'block';
+        if (loginForm) loginForm.style.display = 'none';
     }
 }
 
 // User Registration
-registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
 
-    const payload = {
-        name: regName.value.trim(),
-        email: regEmail.value.trim(),
-        password: regPassword.value,
-        phone: regPhone.value.trim() || null
-    };
+        const nameInput = document.getElementById('regName');
+        const emailInput = document.getElementById('regEmail');
+        const passInput = document.getElementById('regPassword');
+        const phoneInput = document.getElementById('regPhone');
+        const submitBtn = document.getElementById('registerSubmitBtn');
 
-    try {
-        const response = await fetch(`${API_BASE}/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const payload = {
+            name: nameInput.value.trim(),
+            email: emailInput.value.trim(),
+            password: passInput.value,
+            phone: phoneInput.value.trim() || null
+        };
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || 'Registration failed.');
+        setButtonLoading(submitBtn, true);
+
+        try {
+            const res = await fetch(`${API_BASE}/users/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Registration failed.');
+
+            showStatus(`Registration successful for ${data.name}! You can now login.`, 'success');
+            registerForm.reset();
+            const loginEmail = document.getElementById('loginEmail');
+            if (loginEmail) loginEmail.value = payload.email;
+            switchAuthTab('login');
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(submitBtn, false, 'Create User Account');
         }
-
-        showStatus(`Registration successful for ${data.name}! You can now login.`, 'success');
-        registerForm.reset();
-        loginEmail.value = payload.email;
-        switchAuthTab('login');
-    } catch (err) {
-        showStatus(err.message, 'error');
-    }
-});
+    });
+}
 
 // User Login
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
 
-    const payload = {
-        email: loginEmail.value.trim(),
-        password: loginPassword.value
-    };
+        const emailInput = document.getElementById('loginEmail');
+        const passInput = document.getElementById('loginPassword');
+        const submitBtn = document.getElementById('loginSubmitBtn');
 
-    try {
-        const response = await fetch(`${API_BASE}/users/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const payload = {
+            email: emailInput.value.trim(),
+            password: passInput.value
+        };
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || 'Login failed.');
-        }
+        setButtonLoading(submitBtn, true);
 
-        loggedInUser = data.user;
-        updateLoggedInUserView();
-        showStatus(`Welcome back, ${loggedInUser.name}!`, 'success');
-        loginForm.reset();
+        try {
+            const res = await fetch(`${API_BASE}/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Login failed.');
 
-        // Check if user has accounts and load first one
-        await loadUserAccounts(loggedInUser.id);
-    } catch (err) {
-        showStatus(err.message, 'error');
-    }
-});
+            loggedInUser = data.user;
+            updateLoggedInUserUI();
+            showStatus(`Welcome, ${loggedInUser.name}! (${loggedInUser.role})`, 'success');
+            loginForm.reset();
 
-function updateLoggedInUserView() {
-    if (loggedInUser) {
-        const roleLabel = loggedInUser.role === 'ADMIN' ? '🛡️ [ADMIN] ' : '👤 ';
-        loggedInUserInfo.textContent = `${roleLabel}${loggedInUser.name} (User ID: ${loggedInUser.id})`;
-        loggedInUserBar.style.display = 'flex';
-        authFormsContainer.style.display = 'none';
-        createUserId.value = loggedInUser.id;
-        createName.value = loggedInUser.name;
-        createEmail.value = loggedInUser.email;
+            // Auto-load customer account if exists
+            await loadUserAccounts(loggedInUser.id);
 
-        // Auto-open admin view if admin logged in
-        if (loggedInUser.role === 'ADMIN') {
-            const adminSection = document.getElementById('adminSection');
-            if (adminSection && adminSection.style.display === 'none') {
-                toggleAdminView();
+            // Navigate to Dashboard
+            if (loggedInUser.role === 'ADMIN') {
+                navigateToSection('secAdmin');
+            } else {
+                navigateToSection('secDashboard');
             }
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(submitBtn, false, 'Login');
+        }
+    });
+}
+
+function updateLoggedInUserUI() {
+    const loggedInUserBar = document.getElementById('loggedInUserBar');
+    const loggedInUserInfo = document.getElementById('loggedInUserInfo');
+    const loggedOutBar = document.getElementById('loggedOutBar');
+    const navAdminBtn = document.getElementById('navAdminBtn');
+
+    if (loggedInUser) {
+        if (loggedInUserBar) loggedInUserBar.style.display = 'flex';
+        if (loggedOutBar) loggedOutBar.style.display = 'none';
+        const roleIcon = loggedInUser.role === 'ADMIN' ? '🛡️ [ADMIN] ' : '👤 ';
+        if (loggedInUserInfo) loggedInUserInfo.textContent = `${roleIcon}${loggedInUser.name}`;
+        
+        // Auto-fill user ID in account creation form
+        const createUserId = document.getElementById('createUserId');
+        const createName = document.getElementById('createName');
+        const createEmail = document.getElementById('createEmail');
+        if (createUserId) createUserId.value = loggedInUser.id;
+        if (createName && !createName.value) createName.value = loggedInUser.name;
+        if (createEmail && !createEmail.value) createEmail.value = loggedInUser.email;
+
+        if (navAdminBtn && loggedInUser.role === 'ADMIN') {
+            navAdminBtn.style.display = 'inline-block';
         }
     } else {
-        loggedInUserBar.style.display = 'none';
-        authFormsContainer.style.display = 'block';
-        createUserId.value = '';
+        if (loggedInUserBar) loggedInUserBar.style.display = 'none';
+        if (loggedOutBar) loggedOutBar.style.display = 'block';
+        const createUserId = document.getElementById('createUserId');
+        if (createUserId) createUserId.value = '';
     }
 }
 
 function logoutUser() {
     loggedInUser = null;
-    updateLoggedInUserView();
+    updateLoggedInUserUI();
     showStatus('Logged out successfully.', 'success');
+    navigateToSection('secDashboard');
 }
 
 async function loadUserAccounts(userId) {
@@ -217,233 +611,206 @@ async function loadUserAccounts(userId) {
         const res = await fetch(`${API_BASE}/users/${userId}/accounts`);
         const accounts = await res.json();
         if (res.ok && Array.isArray(accounts) && accounts.length > 0) {
-            updateAccountDetailsView(accounts[0]);
-            await loadTransactions(accounts[0].id);
-            await loadSavingsGoals(accounts[0].id);
+            updateAllAccountViews(accounts[0]);
         }
     } catch (e) {
         console.error('Error fetching user accounts', e);
     }
 }
 
-// Update Account Details UI
-function updateAccountDetailsView(account) {
-    if (!account) {
-        detailAccountId.textContent = '—';
-        detailName.textContent = '—';
-        detailAccountNumber.textContent = '—';
-        detailUserId.textContent = '—';
-        detailBalance.textContent = '—';
-        if (transferFrom) transferFrom.value = '';
-        resetAnalyticsView();
-        if (savingsGoalTableBody) {
-            savingsGoalTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td></tr>`;
-        }
-        return;
-    }
+// ========================================================
+// 5. Section 4: Create Account & Lookup
+// ========================================================
+const createAccountForm = document.getElementById('createAccountForm');
+if (createAccountForm) {
+    createAccountForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
 
-    currentAccountId = account.id;
-    lookupAccountId.value = account.id;
-    detailAccountId.textContent = account.id;
-    detailName.textContent = account.name;
-    detailAccountNumber.textContent = account.accountNumber;
-    detailUserId.textContent = account.userId !== undefined && account.userId !== null ? account.userId : 'None';
-    detailBalance.textContent = formatCurrency(account.balance);
-    if (transferFrom) transferFrom.value = account.accountNumber || account.id;
-    const soapAccountInput = document.getElementById('soapAccountInput');
-    if (soapAccountInput) soapAccountInput.value = account.accountNumber || account.id;
+        const nameInput = document.getElementById('createName');
+        const emailInput = document.getElementById('createEmail');
+        const accNoInput = document.getElementById('createAccountNumber');
+        const initBalInput = document.getElementById('createInitialBalance');
+        const userIdInput = document.getElementById('createUserId');
+        const createBtn = document.getElementById('createBtn');
+
+        const initialBalance = parseFloat(initBalInput.value);
+        if (isNaN(initialBalance) || initialBalance < 0) {
+            showStatus('Initial balance cannot be negative.', 'error');
+            return;
+        }
+
+        const payload = {
+            name: nameInput.value.trim(),
+            email: emailInput.value.trim(),
+            initialBalance: initialBalance
+        };
+
+        const accNo = accNoInput.value.trim();
+        if (accNo) payload.accountNumber = accNo;
+
+        const uId = userIdInput.value ? parseInt(userIdInput.value, 10) : null;
+        if (uId && !isNaN(uId)) payload.userId = uId;
+
+        setButtonLoading(createBtn, true);
+
+        try {
+            const res = await fetch(`${API_BASE}/accounts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to create account.');
+
+            updateAllAccountViews(data);
+            showStatus(`Account created! Account ID: ${data.id}, No: ${data.accountNumber}`, 'success');
+            createAccountForm.reset();
+            if (loggedInUser && userIdInput) userIdInput.value = loggedInUser.id;
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(createBtn, false, 'Open Account');
+        }
+    });
 }
 
-// 1. Create Account
-createAccountForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
+const fetchAccountForm = document.getElementById('fetchAccountForm');
+if (fetchAccountForm) {
+    fetchAccountForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
 
-    const name = createName.value.trim();
-    const email = createEmail.value.trim();
-    const accountNumber = createAccountNumber.value.trim();
-    const initialBalance = parseFloat(createInitialBalance.value);
-    const userIdVal = createUserId.value ? parseInt(createUserId.value, 10) : null;
+        const input = document.getElementById('lookupAccountId');
+        const btn = document.getElementById('lookupAccountBtn');
+        if (!input || !input.value.trim()) return;
 
-    if (isNaN(initialBalance) || initialBalance < 0) {
-        showStatus('Initial balance cannot be negative.', 'error');
-        return;
-    }
+        setButtonLoading(btn, true);
+        const acc = await loadAccountByQuery(input.value);
+        setButtonLoading(btn, false, 'Load');
 
-    const payload = {
-        name: name,
-        email: email,
-        initialBalance: initialBalance
-    };
-
-    if (accountNumber) {
-        payload.accountNumber = accountNumber;
-    }
-    if (userIdVal && !isNaN(userIdVal)) {
-        payload.userId = userIdVal;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/accounts`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to create account.');
+        if (acc) {
+            showStatus(`Account #${acc.id} (${acc.accountNumber}) loaded successfully.`, 'success');
         }
-
-        updateAccountDetailsView(data);
-        showStatus(`Account created successfully! Account ID: ${data.id}, Account No: ${data.accountNumber}`, 'success');
-
-        createAccountForm.reset();
-        if (loggedInUser) {
-            createUserId.value = loggedInUser.id;
-        }
-
-        await loadTransactions(data.id);
-        await loadSavingsGoals(data.id);
-    } catch (error) {
-        showStatus(error.message || 'Error connecting to backend API.', 'error');
-    }
-});
-
-// 2. Load Account Details by ID
-fetchAccountForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
-
-    const id = lookupAccountId.value.trim();
-    if (!id) {
-        showStatus('Please enter a valid Account ID.', 'error');
-        return;
-    }
-
-    await loadAccountById(id);
-});
-
-async function loadAccountById(id) {
-    try {
-        const response = await fetch(`${API_BASE}/accounts/${id}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || `Account with ID ${id} not found.`);
-        }
-
-        updateAccountDetailsView(data);
-        showStatus(`Account #${data.id} loaded successfully.`, 'success');
-        await loadTransactions(data.id);
-        await loadSavingsGoals(data.id);
-    } catch (error) {
-        showStatus(error.message || 'Error fetching account details.', 'error');
-    }
+    });
 }
 
-// 3. Deposit
-depositForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
+// ========================================================
+// 6. Section 5: Dedicated Deposit Form
+// ========================================================
+const depositForm = document.getElementById('depositForm');
+if (depositForm) {
+    depositForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
 
-    if (!currentAccountId) {
-        showStatus('Please create or load an account first before depositing.', 'error');
-        return;
-    }
-
-    const amount = parseFloat(depositAmount.value);
-    if (isNaN(amount) || amount <= 0) {
-        showStatus('Deposit amount must be greater than zero.', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/accounts/${currentAccountId}/deposit`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ amount: amount })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Deposit failed.');
+        if (!currentAccount) {
+            showStatus('Please create or load an account first before depositing.', 'error');
+            return;
         }
 
-        updateAccountDetailsView(data);
-        showStatus(`Deposited ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
-        depositForm.reset();
+        const amountInput = document.getElementById('depositAmount');
+        const depositBtn = document.getElementById('depositBtn');
+        const amount = parseFloat(amountInput.value);
 
-        await loadTransactions(currentAccountId);
-    } catch (error) {
-        showStatus(error.message || 'Deposit transaction failed.', 'error');
-    }
-});
-
-// 4. Withdraw
-withdrawForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
-
-    if (!currentAccountId) {
-        showStatus('Please create or load an account first before withdrawing.', 'error');
-        return;
-    }
-
-    const amount = parseFloat(withdrawAmount.value);
-    if (isNaN(amount) || amount <= 0) {
-        showStatus('Withdraw amount must be greater than zero.', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/accounts/${currentAccountId}/withdraw`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ amount: amount })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Withdrawal failed.');
+        if (isNaN(amount) || amount <= 0) {
+            showStatus('Deposit amount must be greater than zero.', 'error');
+            return;
         }
 
-        updateAccountDetailsView(data);
-        showStatus(`Withdrew ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
-        withdrawForm.reset();
+        setButtonLoading(depositBtn, true);
 
-        await loadTransactions(currentAccountId);
-    } catch (error) {
-        showStatus(error.message || 'Withdrawal transaction failed.', 'error');
-    }
-});
+        try {
+            const res = await fetch(`${API_BASE}/accounts/${currentAccount.id}/deposit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amount })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Deposit failed.');
 
-// 5. Fund Transfer
+            updateAllAccountViews(data);
+            showStatus(`Deposited ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
+            depositForm.reset();
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(depositBtn, false, 'Deposit Funds');
+        }
+    });
+}
+
+// ========================================================
+// 7. Section 6: Dedicated Withdraw Form
+// ========================================================
+const withdrawForm = document.getElementById('withdrawForm');
+if (withdrawForm) {
+    withdrawForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
+
+        if (!currentAccount) {
+            showStatus('Please create or load an account first before withdrawing.', 'error');
+            return;
+        }
+
+        const amountInput = document.getElementById('withdrawAmount');
+        const withdrawBtn = document.getElementById('withdrawBtn');
+        const amount = parseFloat(amountInput.value);
+
+        if (isNaN(amount) || amount <= 0) {
+            showStatus('Withdraw amount must be greater than zero.', 'error');
+            return;
+        }
+
+        setButtonLoading(withdrawBtn, true);
+
+        try {
+            const res = await fetch(`${API_BASE}/accounts/${currentAccount.id}/withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amount })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Withdrawal failed.');
+
+            updateAllAccountViews(data);
+            showStatus(`Withdrew ${formatCurrency(amount)} successfully! New Balance: ${formatCurrency(data.balance)}`, 'success');
+            withdrawForm.reset();
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(withdrawBtn, false, 'Withdraw Funds');
+        }
+    });
+}
+
+// ========================================================
+// 8. Section 7: Dedicated Fund Transfer Form
+// ========================================================
+const transferForm = document.getElementById('transferForm');
 if (transferForm) {
     transferForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         hideStatus();
 
-        const fromVal = transferFrom.value.trim();
-        const toVal = transferTo.value.trim();
-        const amount = parseFloat(transferAmount.value);
-        const description = transferDescription.value.trim();
+        const fromInput = document.getElementById('transferFrom');
+        const toInput = document.getElementById('transferTo');
+        const amountInput = document.getElementById('transferAmount');
+        const descInput = document.getElementById('transferDescription');
+        const transferBtn = document.getElementById('transferBtn');
+
+        const fromVal = fromInput.value.trim();
+        const toVal = toInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        const desc = descInput.value.trim();
 
         if (!fromVal) {
             showStatus('Sender account (ID or Number) is required.', 'error');
             return;
         }
         if (!toVal) {
-            showStatus('Receiver account (ID or Number) is required.', 'error');
+            showStatus('Recipient account (ID or Number) is required.', 'error');
             return;
         }
         if (isNaN(amount) || amount <= 0) {
@@ -453,7 +820,7 @@ if (transferForm) {
 
         const payload = {
             amount: amount,
-            description: description || null
+            description: desc || null
         };
 
         if (/^\d+$/.test(fromVal)) {
@@ -470,163 +837,166 @@ if (transferForm) {
             payload.toAccountNumber = toVal;
         }
 
+        setButtonLoading(transferBtn, true);
+
         try {
-            const response = await fetch(`${API_BASE}/transactions/transfer`, {
+            const res = await fetch(`${API_BASE}/transactions/transfer`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Transfer failed.');
-            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Transfer failed.');
 
             showStatus(`Transfer of ${formatCurrency(amount)} successful! Ref ID: ${data.transactionId}. Sender Balance: ${formatCurrency(data.senderBalance)}`, 'success');
-            transferAmount.value = '';
-            transferDescription.value = '';
+            amountInput.value = '';
+            descInput.value = '';
 
-            // Reload active account details and transactions
-            if (currentAccountId) {
-                await loadAccountById(currentAccountId);
+            // Reload active account details
+            if (currentAccount) {
+                await loadAccountByQuery(String(currentAccount.id));
             }
-        } catch (error) {
-            showStatus(error.message || 'Transfer transaction failed.', 'error');
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(transferBtn, false, 'Send Transfer');
         }
     });
 }
 
-// 6. Transaction History
+// ========================================================
+// 9. Section 8: Transaction History & Customer Dashboard Recent Tx
+// ========================================================
 async function loadTransactions(accountId) {
-    if (!accountId) {
-        transactionTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">No account selected. Create or load an account to view transactions.</td>
-            </tr>
-        `;
-        return;
-    }
+    if (!accountId) return;
 
     try {
-        const response = await fetch(`${API_BASE}/transactions/account/${accountId}`);
-        const transactions = await response.json();
+        const res = await fetch(`${API_BASE}/transactions/account/${accountId}`);
+        const transactions = await res.json();
 
-        if (!response.ok) {
-            throw new Error('Failed to load transaction history.');
-        }
+        if (!res.ok) throw new Error('Failed to load transaction history.');
 
-        if (!Array.isArray(transactions) || transactions.length === 0) {
-            transactionTableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="empty-state">No transactions recorded for this account.</td>
-                </tr>
-            `;
-            return;
-        }
-
-        transactionTableBody.innerHTML = transactions.map(tx => {
-            let badgeClass = 'DEPOSIT';
-            if (tx.type === 'WITHDRAW') badgeClass = 'WITHDRAW';
-            else if (tx.type === 'TRANSFER_OUT') badgeClass = 'TRANSFER_OUT';
-            else if (tx.type === 'TRANSFER_IN') badgeClass = 'TRANSFER_IN';
-
-            return `
-                <tr>
-                    <td>${tx.id}</td>
-                    <td><span class="badge ${badgeClass}">${tx.type}</span></td>
-                    <td>${formatCurrency(tx.amount)}</td>
-                    <td>${tx.senderAccount || '—'}</td>
-                    <td>${tx.receiverAccount || '—'}</td>
-                    <td>${tx.description || '—'}</td>
-                    <td><span class="badge SUCCESS">${tx.status}</span></td>
-                    <td>${formatDateTime(tx.createdAt)}</td>
-                </tr>
-            `;
-        }).join('');
-        loadAnalytics(accountId);
-    } catch (error) {
-        transactionTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">Unable to load transaction history: ${error.message}</td>
-            </tr>
-        `;
+        renderTransactionTables(transactions);
+    } catch (err) {
+        console.error('Error fetching transactions:', err);
     }
 }
 
-async function loadAnalytics(accountId) {
-    if (!accountId) {
-        resetAnalyticsView();
+function renderTransactionTables(transactions) {
+    const fullBody = document.getElementById('transactionTableBody');
+    const recentBody = document.getElementById('dashRecentTxTableBody');
+
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        const emptyRow = '<tr><td colspan="8" class="empty-state">No transactions recorded for this account.</td></tr>';
+        if (fullBody) fullBody.innerHTML = emptyRow;
+        if (recentBody) recentBody.innerHTML = emptyRow;
         return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}/analytics/account/${accountId}`);
-        const data = await response.json();
+    // 1. Render Full Transaction Table (Section 8)
+    if (fullBody) {
+        fullBody.innerHTML = transactions.map(tx => formatTxRow(tx)).join('');
+    }
 
-        if (!response.ok) {
-            resetAnalyticsView();
-            return;
-        }
-
-        if (analyticsDeposits) analyticsDeposits.textContent = formatCurrency(data.totalDeposits);
-        if (analyticsWithdrawals) analyticsWithdrawals.textContent = formatCurrency(data.totalWithdrawals);
-        if (analyticsTransfers) analyticsTransfers.textContent = formatCurrency(data.totalTransfers);
-        if (analyticsCount) analyticsCount.textContent = data.transactionCount !== undefined ? data.transactionCount : 0;
-        if (analyticsReceived) analyticsReceived.textContent = formatCurrency(data.totalMoneyReceived);
-        if (analyticsSpent) analyticsSpent.textContent = formatCurrency(data.totalMoneySpent);
-        if (analyticsNet) analyticsNet.textContent = formatCurrency(data.netSavings);
-    } catch (e) {
-        console.error('Error fetching analytics:', e);
-        resetAnalyticsView();
+    // 2. Render Recent Transactions (Customer Dashboard - Top 5)
+    if (recentBody) {
+        const top5 = transactions.slice(0, 5);
+        recentBody.innerHTML = top5.map(tx => formatTxRow(tx)).join('');
     }
 }
 
-function resetAnalyticsView() {
-    if (analyticsDeposits) analyticsDeposits.textContent = '₹0.00';
-    if (analyticsWithdrawals) analyticsWithdrawals.textContent = '₹0.00';
-    if (analyticsTransfers) analyticsTransfers.textContent = '₹0.00';
-    if (analyticsCount) analyticsCount.textContent = '0';
-    if (analyticsReceived) analyticsReceived.textContent = '₹0.00';
-    if (analyticsSpent) analyticsSpent.textContent = '₹0.00';
-    if (analyticsNet) analyticsNet.textContent = '₹0.00';
-}
+function formatTxRow(tx) {
+    let badgeClass = 'DEPOSIT';
+    if (tx.type === 'WITHDRAW') badgeClass = 'WITHDRAW';
+    else if (tx.type === 'TRANSFER_OUT') badgeClass = 'TRANSFER_OUT';
+    else if (tx.type === 'TRANSFER_IN') badgeClass = 'TRANSFER_IN';
 
-function reloadCurrentAnalytics() {
-    if (!currentAccountId) {
-        showStatus('Please create or load an account first.', 'error');
-        return;
-    }
-    loadAnalytics(currentAccountId);
-    showStatus('Analytics refreshed.', 'success');
+    return `
+        <tr>
+            <td>${tx.id}</td>
+            <td><span class="badge ${badgeClass}">${tx.type}</span></td>
+            <td><strong>${formatCurrency(tx.amount)}</strong></td>
+            <td>${escapeHtml(tx.senderAccount) || '—'}</td>
+            <td>${escapeHtml(tx.receiverAccount) || '—'}</td>
+            <td>${escapeHtml(tx.description) || '—'}</td>
+            <td><span class="badge SUCCESS">${tx.status}</span></td>
+            <td>${formatDateTime(tx.createdAt)}</td>
+        </tr>
+    `;
 }
 
 function reloadCurrentTransactions() {
-    if (!currentAccountId) {
+    if (!currentAccount) {
         showStatus('Please create or load an account first.', 'error');
         return;
     }
-    loadTransactions(currentAccountId);
-    showStatus('Transactions refreshed.', 'success');
+    loadTransactions(currentAccount.id);
+    showStatus('Transaction history refreshed.', 'success');
 }
 
-// 7. Savings Goals Logic
+// ========================================================
+// 10. Section 9: Personal Finance Analytics
+// ========================================================
+async function loadAnalytics(accountId) {
+    if (!accountId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/analytics/account/${accountId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. Dedicated Analytics Section (Section 9)
+        setText('analyticsDeposits', formatCurrency(data.totalDeposits));
+        setText('analyticsWithdrawals', formatCurrency(data.totalWithdrawals));
+        setText('analyticsTransfers', formatCurrency(data.totalTransfers));
+        setText('analyticsCount', data.transactionCount !== undefined ? data.transactionCount : 0);
+        setText('analyticsReceived', formatCurrency(data.totalMoneyReceived));
+        setText('analyticsSpent', formatCurrency(data.totalMoneySpent));
+        setText('analyticsNet', formatCurrency(data.netSavings));
+
+        // 2. Customer Dashboard Analytics Widget (Section 3)
+        setText('dashAnalyticsDeposits', formatCurrency(data.totalDeposits));
+        setText('dashAnalyticsWithdrawals', formatCurrency(data.totalWithdrawals));
+        setText('dashAnalyticsTransfers', formatCurrency(data.totalTransfers));
+        setText('dashAnalyticsNet', formatCurrency(data.netSavings));
+    } catch (e) {
+        console.error('Error fetching analytics:', e);
+    }
+}
+
+function reloadCurrentAnalytics() {
+    if (!currentAccount) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+    loadAnalytics(currentAccount.id);
+    showStatus('Analytics refreshed.', 'success');
+}
+
+// ========================================================
+// 11. Section 10: Savings Goals
+// ========================================================
+const createGoalForm = document.getElementById('createGoalForm');
 if (createGoalForm) {
     createGoalForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         hideStatus();
 
-        if (!currentAccountId) {
+        if (!currentAccount) {
             showStatus('Please create or load an account first before creating a savings goal.', 'error');
             return;
         }
 
-        const name = goalName.value.trim();
-        const target = parseFloat(goalTargetAmount.value);
-        const current = goalCurrentAmount.value ? parseFloat(goalCurrentAmount.value) : 0;
-        const targetDateVal = goalTargetDate.value || null;
+        const nameInput = document.getElementById('goalName');
+        const targetInput = document.getElementById('goalTargetAmount');
+        const currentInput = document.getElementById('goalCurrentAmount');
+        const dateInput = document.getElementById('goalTargetDate');
+        const submitBtn = document.getElementById('createGoalBtn');
+
+        const name = nameInput.value.trim();
+        const target = parseFloat(targetInput.value);
+        const current = currentInput.value ? parseFloat(currentInput.value) : 0;
+        const targetDate = dateInput.value || null;
 
         if (!name) {
             showStatus('Goal name is required.', 'error');
@@ -642,66 +1012,63 @@ if (createGoalForm) {
         }
 
         const payload = {
-            accountId: currentAccountId,
+            accountId: currentAccount.id,
             goalName: name,
             targetAmount: target,
             currentAmount: current,
-            targetDate: targetDateVal
+            targetDate: targetDate
         };
 
+        setButtonLoading(submitBtn, true);
+
         try {
-            const response = await fetch(`${API_BASE}/savings-goals`, {
+            const res = await fetch(`${API_BASE}/savings-goals`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to create savings goal.');
-            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to create savings goal.');
 
             showStatus(`Savings goal "${data.goalName}" created successfully! Status: ${data.status} (${data.progressPercentage.toFixed(1)}%)`, 'success');
             createGoalForm.reset();
-            await loadSavingsGoals(currentAccountId);
-        } catch (error) {
-            showStatus(error.message || 'Error creating savings goal.', 'error');
+            await loadSavingsGoals(currentAccount.id);
+        } catch (err) {
+            showStatus(err.message, 'error');
+        } finally {
+            setButtonLoading(submitBtn, false, 'Create Goal');
         }
     });
 }
 
 async function loadSavingsGoals(accountId) {
-    if (!savingsGoalTableBody) return;
-    if (!accountId) {
-        savingsGoalTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">No account selected. Create or load an account to view savings goals.</td>
-            </tr>
-        `;
+    if (!accountId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/savings-goals/account/${accountId}`);
+        if (!res.ok) return;
+        const goals = await res.json();
+
+        renderSavingsGoals(goals);
+    } catch (err) {
+        console.error('Error fetching savings goals:', err);
+    }
+}
+
+function renderSavingsGoals(goals) {
+    const tableBody = document.getElementById('savingsGoalTableBody');
+    const dashContainer = document.getElementById('dashGoalsContainer');
+
+    if (!Array.isArray(goals) || goals.length === 0) {
+        const emptyMsg = '<tr><td colspan="8" class="empty-state">No savings goals created for this account yet.</td></tr>';
+        if (tableBody) tableBody.innerHTML = emptyMsg;
+        if (dashContainer) dashContainer.innerHTML = '<p class="empty-state" style="padding: 16px 0;">No active savings goals found.</p>';
         return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}/savings-goals/account/${accountId}`);
-        const goals = await response.json();
-
-        if (!response.ok) {
-            throw new Error('Failed to load savings goals.');
-        }
-
-        if (!Array.isArray(goals) || goals.length === 0) {
-            savingsGoalTableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="empty-state">No savings goals created for this account yet.</td>
-                </tr>
-            `;
-            return;
-        }
-
-        savingsGoalTableBody.innerHTML = goals.map(goal => {
+    // 1. Render Dedicated Savings Goals Table (Section 10)
+    if (tableBody) {
+        tableBody.innerHTML = goals.map(goal => {
             const pct = typeof goal.progressPercentage === 'number' ? goal.progressPercentage : 0;
             const isCompleted = goal.status === 'COMPLETED' || pct >= 100;
             const cappedWidth = Math.min(Math.max(pct, 0), 100);
@@ -729,12 +1096,31 @@ async function loadSavingsGoals(accountId) {
                 </tr>
             `;
         }).join('');
-    } catch (error) {
-        savingsGoalTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">Unable to load savings goals: ${error.message}</td>
-            </tr>
-        `;
+    }
+
+    // 2. Render Customer Dashboard Savings Goals Progress Widget (Section 3)
+    if (dashContainer) {
+        dashContainer.innerHTML = goals.map(goal => {
+            const pct = typeof goal.progressPercentage === 'number' ? goal.progressPercentage : 0;
+            const isCompleted = goal.status === 'COMPLETED' || pct >= 100;
+            const cappedWidth = Math.min(Math.max(pct, 0), 100);
+
+            return `
+                <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px;">
+                        <strong>${escapeHtml(goal.goalName)}</strong>
+                        <span class="badge ${goal.status}">${pct.toFixed(1)}%</span>
+                    </div>
+                    <div class="progress-bar-bg" style="height: 8px; margin-bottom: 4px;">
+                        <div class="progress-bar-fill ${isCompleted ? 'completed' : ''}" style="width: ${cappedWidth}%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #6b7280;">
+                        <span>Saved: ${formatCurrency(goal.currentAmount)}</span>
+                        <span>Target: ${formatCurrency(goal.targetAmount)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 }
 
@@ -749,18 +1135,17 @@ async function addFundsToGoal(goalId, currentAmount) {
 
     const newAmount = Number((currentAmount + additional).toFixed(2));
     try {
-        const response = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
+        const res = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ currentAmount: newAmount })
         });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to update savings goal.');
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to update savings goal.');
+
         showStatus(`Added ${formatCurrency(additional)} to goal "${data.goalName}". Current: ${formatCurrency(data.currentAmount)} (${data.status})`, 'success');
-        if (currentAccountId) {
-            await loadSavingsGoals(currentAccountId);
+        if (currentAccount) {
+            await loadSavingsGoals(currentAccount.id);
         }
     } catch (err) {
         showStatus(err.message, 'error');
@@ -771,53 +1156,33 @@ async function deleteSavingsGoal(goalId) {
     if (!confirm(`Are you sure you want to delete Savings Goal #${goalId}?`)) return;
 
     try {
-        const response = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
+        const res = await fetch(`${API_BASE}/savings-goals/${goalId}`, {
             method: 'DELETE'
         });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to delete savings goal.');
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to delete savings goal.');
+
         showStatus('Savings goal deleted successfully.', 'success');
-        if (currentAccountId) {
-            await loadSavingsGoals(currentAccountId);
+        if (currentAccount) {
+            await loadSavingsGoals(currentAccount.id);
         }
     } catch (err) {
         showStatus(err.message, 'error');
     }
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-}
-
 function reloadCurrentSavingsGoals() {
-    if (!currentAccountId) {
+    if (!currentAccount) {
         showStatus('Please create or load an account first.', 'error');
         return;
     }
-    loadSavingsGoals(currentAccountId);
+    loadSavingsGoals(currentAccount.id);
     showStatus('Savings goals refreshed.', 'success');
 }
 
-// 8. Admin Module Logic
-let currentAdminTab = 'users';
-
-function toggleAdminView() {
-    const adminSection = document.getElementById('adminSection');
-    if (!adminSection) return;
-
-    if (adminSection.style.display === 'none' || !adminSection.style.display) {
-        adminSection.style.display = 'block';
-        loadAdminDashboardData();
-        adminSection.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        adminSection.style.display = 'none';
-    }
-}
-
+// ========================================================
+// 12. Section 11: Admin Dashboard
+// ========================================================
 function switchAdminTab(tab) {
     currentAdminTab = tab;
     const tabs = ['users', 'accounts', 'transactions', 'logs'];
@@ -845,25 +1210,16 @@ async function loadAdminDashboardData() {
         if (!res.ok) throw new Error('Failed to load admin dashboard stats');
         const stats = await res.json();
 
-        const uEl = document.getElementById('adminTotalUsers');
-        const aEl = document.getElementById('adminTotalAccounts');
-        const tEl = document.getElementById('adminTotalTransactions');
-        const bEl = document.getElementById('adminTotalBalance');
-        const dEl = document.getElementById('adminTotalDeposits');
-        const wEl = document.getElementById('adminTotalWithdrawals');
-        const trEl = document.getElementById('adminTotalTransfers');
-        const gEl = document.getElementById('adminTotalGoals');
+        setText('adminTotalUsers', stats.totalUsers);
+        setText('adminTotalAccounts', stats.totalAccounts);
+        setText('adminTotalTransactions', stats.totalTransactions);
+        setText('adminTotalBalance', formatCurrency(stats.totalSystemBalance));
+        setText('adminTotalDeposits', formatCurrency(stats.totalDeposits));
+        setText('adminTotalWithdrawals', formatCurrency(stats.totalWithdrawals));
+        setText('adminTotalTransfers', formatCurrency(stats.totalTransfers));
+        setText('adminTotalGoals', stats.totalSavingsGoals);
 
-        if (uEl) uEl.textContent = stats.totalUsers;
-        if (aEl) aEl.textContent = stats.totalAccounts;
-        if (tEl) tEl.textContent = stats.totalTransactions;
-        if (bEl) bEl.textContent = formatCurrency(stats.totalSystemBalance);
-        if (dEl) dEl.textContent = formatCurrency(stats.totalDeposits);
-        if (wEl) wEl.textContent = formatCurrency(stats.totalWithdrawals);
-        if (trEl) trEl.textContent = formatCurrency(stats.totalTransfers);
-        if (gEl) gEl.textContent = stats.totalSavingsGoals;
-
-        // Load active sub-tab data
+        // Load active subtab table
         switchAdminTab(currentAdminTab);
     } catch (err) {
         showStatus('Error loading admin dashboard: ' + err.message, 'error');
@@ -880,7 +1236,7 @@ async function loadAdminUsers() {
         const users = await res.json();
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No users registered in system.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users registered in system.</td></tr>';
             return;
         }
 
@@ -909,14 +1265,14 @@ async function loadAdminAccounts() {
         const accounts = await res.json();
 
         if (!accounts || accounts.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No accounts found in system.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No accounts found in system.</td></tr>';
             return;
         }
 
         tbody.innerHTML = accounts.map(a => `
             <tr>
                 <td>${a.id}</td>
-                <td><strong>${a.accountNumber}</strong></td>
+                <td><strong>${escapeHtml(a.accountNumber)}</strong></td>
                 <td>${escapeHtml(a.name)}</td>
                 <td>${escapeHtml(a.email)}</td>
                 <td class="balance-value" style="font-size: 0.95rem;">${formatCurrency(a.balance)}</td>
@@ -938,7 +1294,7 @@ async function loadAdminTransactions() {
         const txs = await res.json();
 
         if (!txs || txs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No transactions recorded in system.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No transactions recorded in system.</td></tr>';
             return;
         }
 
@@ -947,9 +1303,9 @@ async function loadAdminTransactions() {
                 <td>${tx.id}</td>
                 <td>${tx.accountId || '—'}</td>
                 <td><span class="badge ${tx.type}">${tx.type}</span></td>
-                <td>${formatCurrency(tx.amount)}</td>
-                <td>${tx.senderAccount || '—'}</td>
-                <td>${tx.receiverAccount || '—'}</td>
+                <td><strong>${formatCurrency(tx.amount)}</strong></td>
+                <td>${escapeHtml(tx.senderAccount) || '—'}</td>
+                <td>${escapeHtml(tx.receiverAccount) || '—'}</td>
                 <td>${escapeHtml(tx.description) || '—'}</td>
                 <td><span class="badge ${tx.status}">${tx.status}</span></td>
                 <td>${formatDateTime(tx.createdAt)}</td>
@@ -970,7 +1326,7 @@ async function loadAdminLogs() {
         const logs = await res.json();
 
         if (!logs || logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No activity logs recorded.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No activity logs recorded.</td></tr>';
             return;
         }
 
@@ -988,23 +1344,19 @@ async function loadAdminLogs() {
     }
 }
 
-// 9. SOAP Account Statement Logic
+// ========================================================
+// 13. Section 12: SOAP Web Service Statement Logic
+// ========================================================
 const soapStatementForm = document.getElementById('soapStatementForm');
-const soapAccountInput = document.getElementById('soapAccountInput');
-const soapStatementResult = document.getElementById('soapStatementResult');
-const soapResAccountNo = document.getElementById('soapResAccountNo');
-const soapResHolder = document.getElementById('soapResHolder');
-const soapResBalance = document.getElementById('soapResBalance');
-const soapTransactionsTableBody = document.getElementById('soapTransactionsTableBody');
-const soapRawRequest = document.getElementById('soapRawRequest');
-const soapRawResponse = document.getElementById('soapRawResponse');
-
 if (soapStatementForm) {
     soapStatementForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         hideStatus();
 
-        const inputVal = soapAccountInput.value.trim();
+        const input = document.getElementById('soapAccountInput');
+        const submitBtn = document.getElementById('soapSubmitBtn');
+        const inputVal = input.value.trim();
+
         if (!inputVal) {
             showStatus('Please enter an Account ID or Account Number for the SOAP statement.', 'error');
             return;
@@ -1026,7 +1378,12 @@ if (soapStatementForm) {
     </soapenv:Body>
 </soapenv:Envelope>`;
 
-        if (soapRawRequest) soapRawRequest.textContent = soapRequestXml;
+        const rawReqPre = document.getElementById('soapRawRequest');
+        const rawResPre = document.getElementById('soapRawResponse');
+        const resultContainer = document.getElementById('soapStatementResult');
+
+        if (rawReqPre) rawReqPre.textContent = soapRequestXml;
+        setButtonLoading(submitBtn, true);
 
         try {
             const response = await fetch('/ws', {
@@ -1039,7 +1396,7 @@ if (soapStatementForm) {
             });
 
             const responseText = await response.text();
-            if (soapRawResponse) soapRawResponse.textContent = responseText;
+            if (rawResPre) rawResPre.textContent = responseText;
 
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(responseText, 'text/xml');
@@ -1061,50 +1418,55 @@ if (soapStatementForm) {
                 throw new Error('Invalid SOAP response structure.');
             }
 
-            soapResAccountNo.textContent = accNoEl.textContent;
-            soapResHolder.textContent = holderEl.textContent;
-            soapResBalance.textContent = formatCurrency(parseFloat(balEl.textContent));
+            setText('soapResAccountNo', accNoEl.textContent);
+            setText('soapResHolder', holderEl.textContent);
+            setText('soapResBalance', formatCurrency(parseFloat(balEl.textContent)));
 
             const txEls = xmlDoc.getElementsByTagName('transactionDetails').length > 0
                 ? xmlDoc.getElementsByTagName('transactionDetails')
                 : xmlDoc.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', 'transactionDetails');
 
-            if (txEls.length === 0) {
-                soapTransactionsTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">No transactions found for this account.</td></tr>`;
-            } else {
-                let rowsHtml = '';
-                for (let i = 0; i < txEls.length; i++) {
-                    const tx = txEls[i];
-                    const id = getXmlVal(tx, 'id');
-                    const type = getXmlVal(tx, 'type');
-                    const amount = parseFloat(getXmlVal(tx, 'amount'));
-                    const status = getXmlVal(tx, 'status');
-                    const date = getXmlVal(tx, 'date');
-                    const sender = getXmlVal(tx, 'senderAccount');
-                    const receiver = getXmlVal(tx, 'receiverAccount');
-                    const desc = getXmlVal(tx, 'description');
+            const txTableBody = document.getElementById('soapTransactionsTableBody');
+            if (txTableBody) {
+                if (txEls.length === 0) {
+                    txTableBody.innerHTML = '<tr><td colspan="8" class="empty-state">No transactions in statement.</td></tr>';
+                } else {
+                    let rowsHtml = '';
+                    for (let i = 0; i < txEls.length; i++) {
+                        const tx = txEls[i];
+                        const id = getXmlVal(tx, 'id');
+                        const type = getXmlVal(tx, 'type');
+                        const amount = parseFloat(getXmlVal(tx, 'amount'));
+                        const status = getXmlVal(tx, 'status');
+                        const date = getXmlVal(tx, 'date');
+                        const sender = getXmlVal(tx, 'senderAccount');
+                        const receiver = getXmlVal(tx, 'receiverAccount');
+                        const desc = getXmlVal(tx, 'description');
 
-                    rowsHtml += `
-                        <tr>
-                            <td>${id}</td>
-                            <td><span class="badge ${type}">${type}</span></td>
-                            <td>${formatCurrency(amount)}</td>
-                            <td><span class="badge ${status}">${status}</span></td>
-                            <td>${formatDateTime(date)}</td>
-                            <td>${sender || '—'}</td>
-                            <td>${receiver || '—'}</td>
-                            <td>${escapeHtml(desc) || '—'}</td>
-                        </tr>
-                    `;
+                        rowsHtml += `
+                            <tr>
+                                <td>${id}</td>
+                                <td><span class="badge ${type}">${type}</span></td>
+                                <td><strong>${formatCurrency(amount)}</strong></td>
+                                <td><span class="badge ${status}">${status}</span></td>
+                                <td>${formatDateTime(date)}</td>
+                                <td>${sender || '—'}</td>
+                                <td>${receiver || '—'}</td>
+                                <td>${escapeHtml(desc) || '—'}</td>
+                            </tr>
+                        `;
+                    }
+                    txTableBody.innerHTML = rowsHtml;
                 }
-                soapTransactionsTableBody.innerHTML = rowsHtml;
             }
 
-            soapStatementResult.style.display = 'block';
+            if (resultContainer) resultContainer.style.display = 'block';
             showStatus(`SOAP statement generated successfully for Account ${accNoEl.textContent}!`, 'success');
         } catch (err) {
-            soapStatementResult.style.display = 'none';
+            if (resultContainer) resultContainer.style.display = 'none';
             showStatus('SOAP Error: ' + err.message, 'error');
+        } finally {
+            setButtonLoading(submitBtn, false, 'Generate SOAP Statement');
         }
     });
 }
@@ -1117,16 +1479,28 @@ function getXmlVal(parent, tag) {
 
 function escapeXml(unsafe) {
     if (!unsafe) return '';
-    return unsafe.replace(/[<>&'"]/g, c => {
+    return String(unsafe).replace(/[<>&'"]/g, c => {
         switch (c) {
             case '<': return '&lt;';
             case '>': return '&gt;';
             case '&': return '&amp;';
             case '\'': return '&apos;';
             case '"': return '&quot;';
+            default: return c;
         }
     });
 }
 
+// ========================================================
+// 14. Initialization on Page Load
+// ========================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Initial view is Customer Dashboard
+    navigateToSection('secDashboard');
 
-
+    // 2. Try loading default demo account (ACC-SOAP-777 or Account ID 1)
+    const initialAcc = await loadAccountByQuery('ACC-SOAP-777');
+    if (!initialAcc) {
+        await loadAccountByQuery('1');
+    }
+});
