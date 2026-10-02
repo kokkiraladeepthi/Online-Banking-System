@@ -12,9 +12,11 @@ import com.bank.mvp.dto.LoginRequest;
 import com.bank.mvp.dto.LoginResponse;
 import com.bank.mvp.dto.RegisterUserRequest;
 import com.bank.mvp.dto.UserResponse;
+import com.bank.mvp.exception.DuplicateUserException;
 import com.bank.mvp.exception.InvalidCredentialsException;
 import com.bank.mvp.exception.ResourceNotFoundException;
 import com.bank.mvp.exception.UserAlreadyExistsException;
+import com.bank.mvp.exception.UserNotFoundException;
 import com.bank.mvp.model.Account;
 import com.bank.mvp.model.User;
 import com.bank.mvp.repository.AccountRepository;
@@ -45,7 +47,7 @@ public class UserService {
         }
 
         if (userRepository.existsByEmail(email)) {
-            throw new UserAlreadyExistsException("User with email '" + email + "' already exists");
+            throw new DuplicateUserException("User with email '" + email + "' already exists");
         }
 
         String rawPassword = request.getPassword();
@@ -87,13 +89,13 @@ public class UserService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
         return mapToUserResponse(user);
     }
 
     public List<AccountResponse> getUserAccounts(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
+            throw new UserNotFoundException("User not found with id: " + userId);
         }
 
         return accountRepository.findByUserId(userId)

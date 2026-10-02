@@ -15,9 +15,12 @@ import com.bank.mvp.dto.MoneyRequest;
 import com.bank.mvp.dto.TransactionResponse;
 import com.bank.mvp.dto.TransferRequest;
 import com.bank.mvp.dto.TransferResponse;
+import com.bank.mvp.exception.AccountNotFoundException;
 import com.bank.mvp.exception.InsufficientBalanceException;
+import com.bank.mvp.exception.InvalidAccountException;
 import com.bank.mvp.exception.InvalidAmountException;
 import com.bank.mvp.exception.ResourceNotFoundException;
+import com.bank.mvp.exception.UserNotFoundException;
 import com.bank.mvp.model.Account;
 import com.bank.mvp.model.Transaction;
 import com.bank.mvp.model.User;
@@ -65,14 +68,14 @@ public class AccountService {
             throw new InvalidAmountException("Initial balance cannot be negative");
         }
         if (accountRepository.findByEmail(email).isPresent()) {
-            throw new InvalidAmountException("Account with this email already exists");
+            throw new InvalidAccountException("Account with this email already exists");
         }
 
         String accountNumber;
         if (request.getAccountNumber() != null && !request.getAccountNumber().trim().isEmpty()) {
             accountNumber = request.getAccountNumber().trim();
             if (accountRepository.findByAccountNumber(accountNumber).isPresent()) {
-                throw new InvalidAmountException("Account with this account number already exists");
+                throw new InvalidAccountException("Account with this account number already exists");
             }
         } else {
             accountNumber = "ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -81,7 +84,7 @@ public class AccountService {
         Account account = new Account(accountNumber, name, email, initialBalance);
         if (userRepository != null && request.getUserId() != null) {
             User user = userRepository.findById(request.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
+                    .orElseThrow(() -> new UserNotFoundException("User not found with id: " + request.getUserId()));
             account.setUser(user);
         }
         Account saved = accountRepository.save(account);
@@ -90,7 +93,7 @@ public class AccountService {
 
     public AccountResponse getAccountById(Long id) {
         Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + id));
         return mapToAccountResponse(account);
     }
 
@@ -140,7 +143,7 @@ public class AccountService {
         Account receiver = resolveAccount(request.getToAccountId(), request.getToAccountNumber(), "Receiver");
 
         if (sender.getId().equals(receiver.getId())) {
-            throw new InvalidAmountException("Cannot transfer money to the same account");
+            throw new InvalidAccountException("Cannot transfer money to the same account");
         }
 
         if (sender.getBalance().compareTo(amount) < 0) {
@@ -211,15 +214,15 @@ public class AccountService {
             }
             if (accountNumber != null && !accountNumber.trim().isEmpty()) {
                 return accountRepository.findByAccountNumber(accountNumber.trim())
-                        .orElseThrow(() -> new ResourceNotFoundException(role + " account not found with id: " + id + " or account number: " + accountNumber.trim()));
+                        .orElseThrow(() -> new AccountNotFoundException(role + " account not found with id: " + id + " or account number: " + accountNumber.trim()));
             }
-            throw new ResourceNotFoundException(role + " account not found with id: " + id);
+            throw new AccountNotFoundException(role + " account not found with id: " + id);
         }
         if (accountNumber != null && !accountNumber.trim().isEmpty()) {
             return accountRepository.findByAccountNumber(accountNumber.trim())
-                    .orElseThrow(() -> new ResourceNotFoundException(role + " account not found with account number: " + accountNumber.trim()));
+                    .orElseThrow(() -> new AccountNotFoundException(role + " account not found with account number: " + accountNumber.trim()));
         }
-        throw new InvalidAmountException(role + " account identifier (ID or account number) is required");
+        throw new InvalidAccountException(role + " account identifier (ID or account number) is required");
     }
 
     public List<TransactionResponse> getTransactionHistory(Long accountId) {
@@ -233,7 +236,7 @@ public class AccountService {
 
     private Account getAccountEntity(Long accountId) {
         return accountRepository.findById(accountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
     }
 
     private BigDecimal validatePositiveAmount(MoneyRequest request) {

@@ -132,6 +132,9 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 5. **Fund Transfer:** Transfer money safely between accounts using atomic `@Transactional` processing. Automatically validates sender, receiver, balance, deducts from sender, adds to receiver, and logs both debit (`TRANSFER_OUT`) and credit (`TRANSFER_IN`) records.
 6. **Transaction Management & History:** Stores and lists every deposit, withdrawal, and transfer chronologically with counterparty account numbers, description, type, amount, status, and timestamp.
 7. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
+8. **Request Validation (`@Valid`):** Strict bean validation on DTOs rejecting null values, blank required strings, negative amounts, zero transaction amounts, and invalid email formats.
+9. **Global Exception Handling (`@RestControllerAdvice`):** Unified error handling translating domain exceptions (`UserNotFoundException`, `AccountNotFoundException`, `InsufficientBalanceException`, `InvalidAmountException`, `DuplicateUserException`, `InvalidAccountException`) into clear JSON error payloads.
+10. **AOP Logging (`@Aspect`):** Spring AspectJ interceptor monitoring key service operations (registration, login, accounts, deposits, withdrawals, transfers, savings goals, admin) with start/completion/failure execution tracking while sanitizing sensitive credentials.
 
 ---
 
