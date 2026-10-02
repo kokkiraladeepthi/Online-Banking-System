@@ -209,10 +209,41 @@
             </div>
         </div>
 
-        <!-- 6. Transaction History -->
+        <!-- 6. Personal Finance Analytics -->
         <section class="card full-width">
             <div class="card-header-row">
-                <h2>6. Transaction History</h2>
+                <h2>6. Personal Finance Analytics</h2>
+                <button type="button" id="refreshAnalyticsBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentAnalytics()">Refresh</button>
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Deposits</span>
+                    <span class="analytics-value text-success" id="analyticsDeposits">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Withdrawals</span>
+                    <span class="analytics-value text-danger" id="analyticsWithdrawals">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Total Transfers</span>
+                    <span class="analytics-value text-purple" id="analyticsTransfers">₹0.00</span>
+                </div>
+                <div class="analytics-card">
+                    <span class="analytics-label">Transaction Count</span>
+                    <span class="analytics-value text-info" id="analyticsCount">0</span>
+                </div>
+            </div>
+            <div id="analyticsSubrow" class="analytics-subrow" style="margin-top: 14px;">
+                <span>Total Received: <strong id="analyticsReceived" class="text-success">₹0.00</strong></span>
+                <span>Total Spent: <strong id="analyticsSpent" class="text-danger">₹0.00</strong></span>
+                <span>Net Savings: <strong id="analyticsNet" class="text-primary">₹0.00</strong></span>
+            </div>
+        </section>
+
+        <!-- 7. Transaction History -->
+        <section class="card full-width">
+            <div class="card-header-row">
+                <h2>7. Transaction History</h2>
                 <button type="button" id="refreshTxBtn" class="btn btn-secondary btn-sm" onclick="reloadCurrentTransactions()">Refresh</button>
             </div>
 

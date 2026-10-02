@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.bank.mvp.aspect.LoggingAspectTest" time="5.281" tests="3" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.bank.mvp.service.AnalyticsServiceTest" time="0.604" tests="3" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -66,9 +66,9 @@
     <property name="java.class.version" value="69.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[online-banking-mvp] "/>
   </properties>
-  <testcase name="shouldLogOperationStartAndCompleteForServiceCalls" classname="com.bank.mvp.aspect.LoggingAspectTest" time="0.616">
-    <system-out><![CDATA[00:13:10.317 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bank.mvp.aspect.LoggingAspectTest]: LoggingAspectTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-00:13:10.421 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bank.mvp.OnlineBankingMvpApplication for test class com.bank.mvp.aspect.LoggingAspectTest
+  <testcase name="shouldReturnZeroAnalyticsForNewAccountWithoutTransactions" classname="com.bank.mvp.service.AnalyticsServiceTest" time="0.019">
+    <system-out><![CDATA[2026-10-03T00:13:16.412+05:30  INFO 10216 --- [online-banking-mvp] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.bank.mvp.service.AnalyticsServiceTest]: AnalyticsServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-03T00:13:16.422+05:30  INFO 10216 --- [online-banking-mvp] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.bank.mvp.OnlineBankingMvpApplication for test class com.bank.mvp.service.AnalyticsServiceTest
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -79,45 +79,215 @@
 
  :: Spring Boot ::               (v3.3.13)
 
-2026-10-03T00:13:10.735+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspectTest    : Starting LoggingAspectTest using Java 25.0.1 with PID 10216 (started by DEEPU in D:\Deskpot\BANK)
-2026-10-03T00:13:10.737+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspectTest    : The following 1 profile is active: "test"
-2026-10-03T00:13:11.280+05:30  INFO 10216 --- [online-banking-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-10-03T00:13:11.338+05:30  INFO 10216 --- [online-banking-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 52 ms. Found 3 JPA repository interfaces.
-2026-10-03T00:13:11.789+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-10-03T00:13:11.839+05:30  INFO 10216 --- [online-banking-mvp] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
-2026-10-03T00:13:11.863+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2026-10-03T00:13:12.137+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-10-03T00:13:12.161+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-10-03T00:13:12.279+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:banktestdb user=SA
-2026-10-03T00:13:12.280+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-10-03T00:13:12.298+05:30  WARN 10216 --- [online-banking-mvp] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-10-03T00:13:12.957+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-10-03T00:13:13.000+05:30  INFO 10216 --- [online-banking-mvp] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-10-03T00:13:14.059+05:30  WARN 10216 --- [online-banking-mvp] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-10-03T00:13:14.109+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
-2026-10-03T00:13:14.713+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:banktestdb'
-2026-10-03T00:13:14.820+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspectTest    : Started LoggingAspectTest in 4.316 seconds (process running for 5.084)
-2026-10-03T00:13:15.232+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Account Creation
-2026-10-03T00:13:15.417+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation completed: Account Creation (Execution time: 184 ms)
-2026-10-03T00:13:15.418+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Account Creation
-2026-10-03T00:13:15.423+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation completed: Account Creation (Execution time: 5 ms)
-2026-10-03T00:13:15.424+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Account Deposit
-2026-10-03T00:13:15.437+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation completed: Account Deposit (Execution time: 13 ms)
-2026-10-03T00:13:15.444+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Account Withdrawal
-2026-10-03T00:13:15.447+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation completed: Account Withdrawal (Execution time: 3 ms)
-2026-10-03T00:13:15.450+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Fund Transfer
-2026-10-03T00:13:15.456+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation completed: Fund Transfer (Execution time: 6 ms)
+2026-10-03T00:13:16.453+05:30  INFO 10216 --- [online-banking-mvp] [           main] c.bank.mvp.service.AnalyticsServiceTest  : Starting AnalyticsServiceTest using Java 25.0.1 with PID 10216 (started by DEEPU in D:\Deskpot\BANK)
+2026-10-03T00:13:16.454+05:30  INFO 10216 --- [online-banking-mvp] [           main] c.bank.mvp.service.AnalyticsServiceTest  : The following 1 profile is active: "test"
+2026-10-03T00:13:16.580+05:30  INFO 10216 --- [online-banking-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-03T00:13:16.595+05:30  INFO 10216 --- [online-banking-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 15 ms. Found 3 JPA repository interfaces.
+2026-10-03T00:13:16.609+05:30  INFO 10216 --- [online-banking-mvp] [           main] beddedDataSourceBeanFactoryPostProcessor : Replacing 'dataSource' DataSource bean with embedded version
+2026-10-03T00:13:16.617+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.s.j.d.e.EmbeddedDatabaseFactory        : Starting embedded database: url='jdbc:h2:mem:7d18961a-76b7-489b-b0d6-0c06650c1b70;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false', username='sa'
+2026-10-03T00:13:16.632+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-03T00:13:16.635+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-03T00:13:16.641+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-03T00:13:16.642+05:30  WARN 10216 --- [online-banking-mvp] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-03T00:13:16.788+05:30  INFO 10216 --- [online-banking-mvp] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: 
+    drop table if exists accounts cascade 
+Hibernate: 
+    drop table if exists transactions cascade 
+Hibernate: 
+    drop table if exists users cascade 
+Hibernate: 
+    create table accounts (
+        balance numeric(19,2) not null,
+        id bigint generated by default as identity,
+        user_id bigint,
+        account_number varchar(20) not null unique,
+        name varchar(100) not null,
+        email varchar(150) not null unique,
+        primary key (id)
+    )
+Hibernate: 
+    create table transactions (
+        amount numeric(19,2) not null,
+        account_id bigint not null,
+        created_at timestamp(6) not null,
+        id bigint generated by default as identity,
+        status varchar(20) not null,
+        type varchar(20) not null,
+        receiver_account varchar(30),
+        sender_account varchar(30),
+        description varchar(255),
+        primary key (id)
+    )
+Hibernate: 
+    create table users (
+        created_at timestamp(6) not null,
+        id bigint generated by default as identity,
+        phone varchar(20),
+        name varchar(100) not null,
+        email varchar(150) not null unique,
+        password varchar(255) not null,
+        primary key (id)
+    )
+Hibernate: 
+    alter table if exists accounts 
+       add constraint FKnjuop33mo69pd79ctplkck40n 
+       foreign key (user_id) 
+       references users
+Hibernate: 
+    alter table if exists transactions 
+       add constraint FK20w7wsg13u9srbq3bd7chfxdh 
+       foreign key (account_id) 
+       references accounts
+2026-10-03T00:13:16.801+05:30  INFO 10216 --- [online-banking-mvp] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-03T00:13:16.919+05:30  INFO 10216 --- [online-banking-mvp] [           main] c.bank.mvp.service.AnalyticsServiceTest  : Started AnalyticsServiceTest in 0.493 seconds (process running for 7.183)
+Hibernate: 
+    insert 
+    into
+        accounts
+        (account_number, balance, email, name, user_id, id) 
+    values
+        (?, ?, ?, ?, ?, default)
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.account_id,
+        t1_0.amount,
+        t1_0.created_at,
+        t1_0.description,
+        t1_0.receiver_account,
+        t1_0.sender_account,
+        t1_0.status,
+        t1_0.type 
+    from
+        transactions t1_0 
+    where
+        t1_0.account_id=? 
+    order by
+        t1_0.created_at desc
 ]]></system-out>
-    <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (C:\Users\DEEPU\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
-WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
-WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
-WARNING: Dynamic loading of agents will be disallowed by default in a future release
-]]></system-err>
   </testcase>
-  <testcase name="shouldLogOperationFailedWhenServiceThrowsException" classname="com.bank.mvp.aspect.LoggingAspectTest" time="0.009">
-    <system-out><![CDATA[2026-10-03T00:13:15.476+05:30  INFO 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation started: Account Withdrawal
-2026-10-03T00:13:15.478+05:30 ERROR 10216 --- [online-banking-mvp] [           main] com.bank.mvp.aspect.LoggingAspect        : [AOP] Operation failed: Account Withdrawal (Execution time: 2 ms). Reason: Insufficient balance for withdrawal
+  <testcase name="shouldThrowExceptionWhenAccountNotFound" classname="com.bank.mvp.service.AnalyticsServiceTest" time="0.012">
+    <system-out><![CDATA[Hibernate: 
+    select
+        a1_0.id,
+        a1_0.account_number,
+        a1_0.balance,
+        a1_0.email,
+        a1_0.name,
+        a1_0.user_id 
+    from
+        accounts a1_0 
+    where
+        a1_0.id=?
 ]]></system-out>
   </testcase>
-  <testcase name="loggingAspectShouldBeInjected" classname="com.bank.mvp.aspect.LoggingAspectTest" time="0.006"/>
+  <testcase name="shouldComputeCorrectAnalyticsForMultipleTransactions" classname="com.bank.mvp.service.AnalyticsServiceTest" time="0.054">
+    <system-out><![CDATA[Hibernate: 
+    insert 
+    into
+        accounts
+        (account_number, balance, email, name, user_id, id) 
+    values
+        (?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        accounts
+        (account_number, balance, email, name, user_id, id) 
+    values
+        (?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, created_at, description, receiver_account, sender_account, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, created_at, description, receiver_account, sender_account, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, created_at, description, receiver_account, sender_account, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, created_at, description, receiver_account, sender_account, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, created_at, description, receiver_account, sender_account, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    update
+        accounts 
+    set
+        account_number=?,
+        balance=?,
+        email=?,
+        name=?,
+        user_id=? 
+    where
+        id=?
+Hibernate: 
+    update
+        accounts 
+    set
+        account_number=?,
+        balance=?,
+        email=?,
+        name=?,
+        user_id=? 
+    where
+        id=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.account_id,
+        t1_0.amount,
+        t1_0.created_at,
+        t1_0.description,
+        t1_0.receiver_account,
+        t1_0.sender_account,
+        t1_0.status,
+        t1_0.type 
+    from
+        transactions t1_0 
+    where
+        t1_0.account_id=? 
+    order by
+        t1_0.created_at desc
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.account_id,
+        t1_0.amount,
+        t1_0.created_at,
+        t1_0.description,
+        t1_0.receiver_account,
+        t1_0.sender_account,
+        t1_0.status,
+        t1_0.type 
+    from
+        transactions t1_0 
+    where
+        t1_0.account_id=? 
+    order by
+        t1_0.created_at desc
+]]></system-out>
+  </testcase>
 </testsuite>

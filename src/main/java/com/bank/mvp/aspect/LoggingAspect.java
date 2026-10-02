@@ -34,18 +34,22 @@ public class LoggingAspect {
     @Pointcut("execution(* com.bank.mvp.service.AccountService.transferMoney(..))")
     public void fundTransferOperation() {}
 
-    // 3. Savings Goal Operations (current & future)
+    // 3. Analytics Operations
+    @Pointcut("execution(* com.bank.mvp.service.AnalyticsService.getAccountAnalytics(..))")
+    public void analyticsOperation() {}
+
+    // 4. Savings Goal Operations (current & future)
     @Pointcut("execution(* com.bank.mvp.service..*SavingsGoal*.*(..))")
     public void savingsGoalOperation() {}
 
-    // 4. Admin Operations (current & future)
+    // 5. Admin Operations (current & future)
     @Pointcut("execution(* com.bank.mvp.service..*Admin*.*(..))")
     public void adminOperation() {}
 
     // Combined Pointcut for all important operations
     @Pointcut("registrationOperation() || loginOperation() || accountCreationOperation() || " +
               "depositOperation() || withdrawalOperation() || fundTransferOperation() || " +
-              "savingsGoalOperation() || adminOperation()")
+              "analyticsOperation() || savingsGoalOperation() || adminOperation()")
     public void importantServiceOperations() {}
 
     @Around("importantServiceOperations()")
@@ -77,6 +81,7 @@ public class LoggingAspect {
             case "deposit" -> "Account Deposit";
             case "withdraw" -> "Account Withdrawal";
             case "transferMoney" -> "Fund Transfer";
+            case "getAccountAnalytics" -> "Personal Finance Analytics";
             default -> {
                 if (methodName.toLowerCase().contains("goal")) {
                     yield "Savings Goal Operation (" + methodName + ")";

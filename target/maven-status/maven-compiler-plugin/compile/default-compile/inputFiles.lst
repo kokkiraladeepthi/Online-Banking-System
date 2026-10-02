@@ -1,11 +1,14 @@
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\aspect\LoggingAspect.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\controller\AccountController.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\controller\AnalyticsController.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\controller\UserController.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\AccountAnalyticsResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\AccountResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\CreateAccountRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\LoginRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\LoginResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\MoneyRequest.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\MonthlyAnalyticsResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\RegisterUserRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\SavingsGoalRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransactionResponse.java
@@ -31,4 +34,5 @@ D:\Deskpot\BANK\src\main\java\com\bank\mvp\repository\AccountRepository.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\repository\TransactionRepository.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\repository\UserRepository.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\service\AccountService.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\service\AnalyticsService.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\service\UserService.java

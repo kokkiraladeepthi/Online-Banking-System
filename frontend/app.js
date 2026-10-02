@@ -57,6 +57,15 @@ const transferDescription = document.getElementById('transferDescription');
 
 const transactionTableBody = document.getElementById('transactionTableBody');
 
+// Analytics DOM Elements
+const analyticsDeposits = document.getElementById('analyticsDeposits');
+const analyticsWithdrawals = document.getElementById('analyticsWithdrawals');
+const analyticsTransfers = document.getElementById('analyticsTransfers');
+const analyticsCount = document.getElementById('analyticsCount');
+const analyticsReceived = document.getElementById('analyticsReceived');
+const analyticsSpent = document.getElementById('analyticsSpent');
+const analyticsNet = document.getElementById('analyticsNet');
+
 // Notification banner helpers
 function showStatus(message, type = 'success') {
     statusBanner.className = `status-banner ${type}`;
@@ -208,6 +217,7 @@ function updateAccountDetailsView(account) {
         detailUserId.textContent = '—';
         detailBalance.textContent = '—';
         if (transferFrom) transferFrom.value = '';
+        resetAnalyticsView();
         return;
     }
 
@@ -511,6 +521,7 @@ async function loadTransactions(accountId) {
                 </tr>
             `;
         }).join('');
+        loadAnalytics(accountId);
     } catch (error) {
         transactionTableBody.innerHTML = `
             <tr>
@@ -518,6 +529,53 @@ async function loadTransactions(accountId) {
             </tr>
         `;
     }
+}
+
+async function loadAnalytics(accountId) {
+    if (!accountId) {
+        resetAnalyticsView();
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/analytics/account/${accountId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            resetAnalyticsView();
+            return;
+        }
+
+        if (analyticsDeposits) analyticsDeposits.textContent = formatCurrency(data.totalDeposits);
+        if (analyticsWithdrawals) analyticsWithdrawals.textContent = formatCurrency(data.totalWithdrawals);
+        if (analyticsTransfers) analyticsTransfers.textContent = formatCurrency(data.totalTransfers);
+        if (analyticsCount) analyticsCount.textContent = data.transactionCount !== undefined ? data.transactionCount : 0;
+        if (analyticsReceived) analyticsReceived.textContent = formatCurrency(data.totalMoneyReceived);
+        if (analyticsSpent) analyticsSpent.textContent = formatCurrency(data.totalMoneySpent);
+        if (analyticsNet) analyticsNet.textContent = formatCurrency(data.netSavings);
+    } catch (e) {
+        console.error('Error fetching analytics:', e);
+        resetAnalyticsView();
+    }
+}
+
+function resetAnalyticsView() {
+    if (analyticsDeposits) analyticsDeposits.textContent = '₹0.00';
+    if (analyticsWithdrawals) analyticsWithdrawals.textContent = '₹0.00';
+    if (analyticsTransfers) analyticsTransfers.textContent = '₹0.00';
+    if (analyticsCount) analyticsCount.textContent = '0';
+    if (analyticsReceived) analyticsReceived.textContent = '₹0.00';
+    if (analyticsSpent) analyticsSpent.textContent = '₹0.00';
+    if (analyticsNet) analyticsNet.textContent = '₹0.00';
+}
+
+function reloadCurrentAnalytics() {
+    if (!currentAccountId) {
+        showStatus('Please create or load an account first.', 'error');
+        return;
+    }
+    loadAnalytics(currentAccountId);
+    showStatus('Analytics refreshed.', 'success');
 }
 
 function reloadCurrentTransactions() {

@@ -422,6 +422,39 @@ Base URL: `http://localhost:8080/api`
   ]
   ```
 
+### 5.10 Personal Finance Analytics
+- **Method:** `GET`
+- **Endpoint:** `/analytics/account/{accountId}`
+- **Response (200 OK):**
+  ```json
+  {
+    "accountId": 1,
+    "accountNumber": "ACC-1001",
+    "currentBalance": 10000.00,
+    "totalDeposits": 10000.00,
+    "totalWithdrawals": 3000.00,
+    "totalTransfersSent": 2000.00,
+    "totalTransfersReceived": 0.00,
+    "totalTransfers": 2000.00,
+    "totalMoneyReceived": 10000.00,
+    "totalMoneySpent": 5000.00,
+    "netSavings": 5000.00,
+    "transactionCount": 3,
+    "monthlySummary": [
+      {
+        "month": "2026-10",
+        "totalDeposits": 10000.00,
+        "totalWithdrawals": 3000.00,
+        "totalTransfersSent": 2000.00,
+        "totalTransfersReceived": 0.00,
+        "inflow": 10000.00,
+        "outflow": 5000.00,
+        "transactionCount": 3
+      }
+    ]
+  }
+  ```
+
 ---
 
 ## 6. How to Test Using Postman
@@ -490,3 +523,8 @@ Base URL: `http://localhost:8080/api`
    - Method: `GET`
    - URL: `http://localhost:8080/api/transactions/account/1`
    - Verify: Status `200 OK` returning complete transaction history with `TRANSFER_OUT`, `DEPOSIT`, `WITHDRAW`, counterparty accounts, descriptions, and timestamps.
+
+10. **View Personal Finance Analytics:**
+    - Method: `GET`
+    - URL: `http://localhost:8080/api/analytics/account/1`
+    - Verify: Status `200 OK` returning summary metrics: `totalDeposits`, `totalWithdrawals`, `totalTransfers`, `totalMoneyReceived`, `totalMoneySpent`, `netSavings`, `transactionCount`, and `monthlySummary`.
