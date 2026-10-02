@@ -11,17 +11,27 @@ public class TransactionResponse {
     private BigDecimal amount;
     private String status;
     private LocalDateTime createdAt;
+    private String senderAccount;
+    private String receiverAccount;
+    private String description;
 
     public TransactionResponse() {
     }
 
     public TransactionResponse(Long id, Long accountId, String type, BigDecimal amount, String status, LocalDateTime createdAt) {
+        this(id, accountId, type, amount, status, createdAt, null, null, null);
+    }
+
+    public TransactionResponse(Long id, Long accountId, String type, BigDecimal amount, String status, LocalDateTime createdAt, String senderAccount, String receiverAccount, String description) {
         this.id = id;
         this.accountId = accountId;
         this.type = type;
         this.amount = amount;
         this.status = status;
         this.createdAt = createdAt;
+        this.senderAccount = senderAccount;
+        this.receiverAccount = receiverAccount;
+        this.description = description;
     }
 
     public Long getId() {
@@ -70,5 +80,29 @@ public class TransactionResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getSenderAccount() {
+        return senderAccount;
+    }
+
+    public void setSenderAccount(String senderAccount) {
+        this.senderAccount = senderAccount;
+    }
+
+    public String getReceiverAccount() {
+        return receiverAccount;
+    }
+
+    public void setReceiverAccount(String receiverAccount) {
+        this.receiverAccount = receiverAccount;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

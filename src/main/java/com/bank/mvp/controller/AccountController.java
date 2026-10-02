@@ -16,6 +16,8 @@ import com.bank.mvp.dto.AccountResponse;
 import com.bank.mvp.dto.CreateAccountRequest;
 import com.bank.mvp.dto.MoneyRequest;
 import com.bank.mvp.dto.TransactionResponse;
+import com.bank.mvp.dto.TransferRequest;
+import com.bank.mvp.dto.TransferResponse;
 import com.bank.mvp.service.AccountService;
 
 import jakarta.validation.Valid;
@@ -50,6 +52,11 @@ public class AccountController {
     @PostMapping("/accounts/{id}/withdraw")
     public ResponseEntity<AccountResponse> withdraw(@PathVariable Long id, @Valid @RequestBody MoneyRequest request) {
         return ResponseEntity.ok(accountService.withdraw(id, request));
+    }
+
+    @PostMapping({"/transactions/transfer", "/accounts/transfer"})
+    public ResponseEntity<TransferResponse> transfer(@Valid @RequestBody TransferRequest request) {
+        return ResponseEntity.ok(accountService.transferMoney(request));
     }
 
     @GetMapping("/transactions/account/{accountId}")

@@ -357,9 +357,28 @@ input[type="number"]:focus {
     color: #991b1b;
 }
 
+.badge.TRANSFER_OUT {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge.TRANSFER_IN {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
 .badge.SUCCESS {
     background-color: #e0e7ff;
     color: #3730a3;
+}
+
+.btn-transfer {
+    background-color: #7c3aed;
+    color: #ffffff;
+}
+
+.btn-transfer:hover {
+    background-color: #6d28d9;
 }
 
 @keyframes fadeIn {

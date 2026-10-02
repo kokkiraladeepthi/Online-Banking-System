@@ -129,8 +129,9 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 2. **Account Details:** View account ID, account holder name, account number, and current balance.
 3. **Deposit Money:** Add funds to the account, immediately updating balance and recording a transaction.
 4. **Withdraw Money:** Withdraw funds with automated balance check. Rejects attempts to withdraw more than the available balance with an `Insufficient balance for withdrawal` error.
-5. **Transaction History:** Stores and lists every deposit and withdrawal chronologically with type, amount, status, and timestamp.
-6. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
+5. **Fund Transfer:** Transfer money safely between accounts using atomic `@Transactional` processing. Automatically validates sender, receiver, balance, deducts from sender, adds to receiver, and logs both debit (`TRANSFER_OUT`) and credit (`TRANSFER_IN`) records.
+6. **Transaction Management & History:** Stores and lists every deposit, withdrawal, and transfer chronologically with counterparty account numbers, description, type, amount, status, and timestamp.
+7. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
 
 ---
 
@@ -163,9 +164,12 @@ The database consists of three core tables:
 |---|---|---|---|
 | `id` | `BIGINT` | PRIMARY KEY, AUTO_INCREMENT | Unique transaction identifier |
 | `account_id` | `BIGINT` | FOREIGN KEY (`accounts.id`), NOT NULL | Associated account ID |
-| `type` | `VARCHAR(20)` | NOT NULL | `DEPOSIT` or `WITHDRAW` |
+| `type` | `VARCHAR(20)` | NOT NULL | `DEPOSIT`, `WITHDRAW`, `TRANSFER_OUT`, `TRANSFER_IN` |
 | `amount` | `DECIMAL(19, 2)` | NOT NULL | Transaction amount |
 | `status` | `VARCHAR(20)` | NOT NULL | `SUCCESS` |
+| `sender_account` | `VARCHAR(30)` | NULL | Sender account number |
+| `receiver_account` | `VARCHAR(30)` | NULL | Receiver account number |
+| `description` | `VARCHAR(255)` | NULL | Transaction remarks/purpose |
 | `created_at` | `TIMESTAMP` | NOT NULL | Timestamp when transaction occurred |
 
 ---
@@ -327,19 +331,79 @@ Base URL: `http://localhost:8080/api`
   }
   ```
 
-### 5.8 Transaction History
+### 5.8 Fund Transfer
+- **Method:** `POST`
+- **Endpoint:** `/transactions/transfer` (also aliases to `/accounts/transfer`)
+- **Request Body (By Account ID or Account Number):**
+  ```json
+  {
+    "fromAccountId": 1,
+    "toAccountId": 2,
+    "amount": 1500.00,
+    "description": "Monthly rent payment"
+  }
+  ```
+  *(Alternatively, specify `"fromAccountNumber": "ACC-1001"` and `"toAccountNumber": "ACC-2002"`)*
+- **Response (200 OK):**
+  ```json
+  {
+    "message": "Transfer successful",
+    "transactionId": 1,
+    "fromAccountId": 1,
+    "fromAccountNumber": "ACC-1001",
+    "toAccountId": 2,
+    "toAccountNumber": "ACC-2002",
+    "amount": 1500.00,
+    "senderBalance": 3500.00,
+    "status": "SUCCESS",
+    "timestamp": "2026-10-02T23:57:11.017"
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request` (Insufficient balance):
+    ```json
+    { "message": "Insufficient balance for fund transfer" }
+    ```
+  - `400 Bad Request` (Invalid amount):
+    ```json
+    { "message": "Transfer amount must be greater than zero" }
+    ```
+  - `400 Bad Request` (Same account):
+    ```json
+    { "message": "Cannot transfer money to the same account" }
+    ```
+  - `404 Not Found` (Account does not exist):
+    ```json
+    { "message": "Sender account not found with id: 999" }
+    ```
+
+### 5.9 Transaction History
 - **Method:** `GET`
 - **Endpoint:** `/transactions/account/{accountId}`
 - **Response (200 OK):**
   ```json
   [
     {
+      "id": 3,
+      "accountId": 1,
+      "type": "TRANSFER_OUT",
+      "amount": 1500.00,
+      "status": "SUCCESS",
+      "createdAt": "2026-10-02T23:57:11.017",
+      "senderAccount": "ACC-1001",
+      "receiverAccount": "ACC-2002",
+      "description": "Monthly rent payment"
+    },
+    {
       "id": 2,
       "accountId": 1,
       "type": "WITHDRAW",
-      "amount": 1500.00,
+      "amount": 500.00,
       "status": "SUCCESS",
-      "createdAt": "2026-09-30T20:51:01.6705"
+      "createdAt": "2026-10-02T22:30:10.120",
+      "senderAccount": "ACC-1001",
+      "receiverAccount": null,
+      "description": "Withdrawal"
     },
     {
       "id": 1,
@@ -347,7 +411,10 @@ Base URL: `http://localhost:8080/api`
       "type": "DEPOSIT",
       "amount": 2000.00,
       "status": "SUCCESS",
-      "createdAt": "2026-09-30T20:51:01.6384"
+      "createdAt": "2026-10-02T22:15:00.450",
+      "senderAccount": null,
+      "receiverAccount": "ACC-1001",
+      "description": "Deposit"
     }
   ]
   ```
@@ -360,58 +427,63 @@ Base URL: `http://localhost:8080/api`
 2. Set the request header `Content-Type: application/json` for all POST requests.
 
 ### Test Sequence:
-1. **Create Account:**
+1. **User Registration:**
+   - Method: `POST`
+   - URL: `http://localhost:8080/api/users/register`
+   - Body: `{"name":"Alice Smith","email":"alice@example.com","password":"password123","phone":"9876543210"}`
+   - Verify: Status `201 Created`.
+
+2. **User Login:**
+   - Method: `POST`
+   - URL: `http://localhost:8080/api/users/login`
+   - Body: `{"email":"alice@example.com","password":"password123"}`
+   - Verify: Status `200 OK` with user details.
+
+3. **Create Sender Account:**
    - Method: `POST`
    - URL: `http://localhost:8080/api/accounts`
-   - Body (Raw JSON):
+   - Body: `{"name":"Alice Smith","email":"alice@example.com","accountNumber":"ACC-ALICE-1","initialBalance":5000.00,"userId":1}`
+   - Verify: Status `201 Created` with generated account ID.
+
+4. **Create Receiver Account:**
+   - Method: `POST`
+   - URL: `http://localhost:8080/api/accounts`
+   - Body: `{"name":"Bob Jones","email":"bob@example.com","accountNumber":"ACC-BOB-1","initialBalance":1000.00}`
+   - Verify: Status `201 Created`.
+
+5. **Transfer Money (Fund Transfer):**
+   - Method: `POST`
+   - URL: `http://localhost:8080/api/transactions/transfer`
+   - Body:
      ```json
      {
-       "name": "Alice Smith",
-       "email": "alice@example.com",
-       "initialBalance": 5000.00
+       "fromAccountId": 1,
+       "toAccountId": 2,
+       "amount": 1500.00,
+       "description": "Payment for services"
      }
      ```
-   - Verify: Status `201 Created` with generated `id` (e.g., `1`).
+   - Verify: Status `200 OK`, `senderBalance` reduced by 1500 to `3500.00`.
 
-2. **View Account:**
-   - Method: `GET`
-   - URL: `http://localhost:8080/api/accounts/1`
-   - Verify: Status `200 OK` with balance `5000.00`.
-
-3. **Deposit Money:**
+6. **Deposit Money:**
    - Method: `POST`
    - URL: `http://localhost:8080/api/accounts/1/deposit`
-   - Body (Raw JSON):
-     ```json
-     {
-       "amount": 2000.00
-     }
-     ```
-   - Verify: Status `200 OK` with updated balance `7000.00`.
+   - Body: `{"amount": 500.00}`
+   - Verify: Status `200 OK` with updated balance `4000.00`.
 
-4. **Withdraw Money:**
+7. **Withdraw Money:**
    - Method: `POST`
    - URL: `http://localhost:8080/api/accounts/1/withdraw`
-   - Body (Raw JSON):
-     ```json
-     {
-       "amount": 1000.00
-     }
-     ```
-   - Verify: Status `200 OK` with updated balance `6000.00`.
+   - Body: `{"amount": 300.00}`
+   - Verify: Status `200 OK` with updated balance `3700.00`.
 
-5. **Test Insufficient Balance:**
+8. **Test Insufficient Balance on Transfer:**
    - Method: `POST`
-   - URL: `http://localhost:8080/api/accounts/1/withdraw`
-   - Body (Raw JSON):
-     ```json
-     {
-       "amount": 99999.00
-     }
-     ```
-   - Verify: Status `400 Bad Request` with error message `"Insufficient balance for withdrawal"`.
+   - URL: `http://localhost:8080/api/transactions/transfer`
+   - Body: `{"fromAccountId": 1, "toAccountId": 2, "amount": 99999.00}`
+   - Verify: Status `400 Bad Request` with `"Insufficient balance for fund transfer"`.
 
-6. **View Transaction History:**
+9. **View Transaction History:**
    - Method: `GET`
    - URL: `http://localhost:8080/api/transactions/account/1`
-   - Verify: Status `200 OK` returning an array of transactions in descending order of creation.
+   - Verify: Status `200 OK` returning complete transaction history with `TRANSFER_OUT`, `DEPOSIT`, `WITHDRAW`, counterparty accounts, descriptions, and timestamps.

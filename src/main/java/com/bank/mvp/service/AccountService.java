@@ -1,6 +1,7 @@
 package com.bank.mvp.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,8 @@ import com.bank.mvp.dto.AccountResponse;
 import com.bank.mvp.dto.CreateAccountRequest;
 import com.bank.mvp.dto.MoneyRequest;
 import com.bank.mvp.dto.TransactionResponse;
+import com.bank.mvp.dto.TransferRequest;
+import com.bank.mvp.dto.TransferResponse;
 import com.bank.mvp.exception.InsufficientBalanceException;
 import com.bank.mvp.exception.InvalidAmountException;
 import com.bank.mvp.exception.ResourceNotFoundException;
@@ -98,7 +101,7 @@ public class AccountService {
 
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
-        saveTransaction(account, "DEPOSIT", amount, "SUCCESS");
+        saveTransaction(account, "DEPOSIT", amount, "SUCCESS", null, account.getAccountNumber(), "Deposit");
 
         return mapToAccountResponse(account);
     }
@@ -114,9 +117,109 @@ public class AccountService {
 
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
-        saveTransaction(account, "WITHDRAW", amount, "SUCCESS");
+        saveTransaction(account, "WITHDRAW", amount, "SUCCESS", account.getAccountNumber(), null, "Withdrawal");
 
         return mapToAccountResponse(account);
+    }
+
+    @Transactional
+    public TransferResponse transferMoney(TransferRequest request) {
+        if (request == null) {
+            throw new InvalidAmountException("Request body is required");
+        }
+
+        BigDecimal amount = request.getAmount();
+        if (amount == null) {
+            throw new InvalidAmountException("Amount is required");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidAmountException("Transfer amount must be greater than zero");
+        }
+
+        Account sender = resolveAccount(request.getFromAccountId(), request.getFromAccountNumber(), "Sender");
+        Account receiver = resolveAccount(request.getToAccountId(), request.getToAccountNumber(), "Receiver");
+
+        if (sender.getId().equals(receiver.getId())) {
+            throw new InvalidAmountException("Cannot transfer money to the same account");
+        }
+
+        if (sender.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientBalanceException("Insufficient balance for fund transfer");
+        }
+
+        // Deduct money from sender
+        sender.setBalance(sender.getBalance().subtract(amount));
+        accountRepository.save(sender);
+
+        // Add money to receiver
+        receiver.setBalance(receiver.getBalance().add(amount));
+        accountRepository.save(receiver);
+
+        // Description
+        String desc = request.getDescription();
+        String senderDesc = (desc != null && !desc.trim().isEmpty())
+                ? desc.trim()
+                : "Transfer to " + receiver.getAccountNumber();
+        String receiverDesc = (desc != null && !desc.trim().isEmpty())
+                ? desc.trim()
+                : "Transfer from " + sender.getAccountNumber();
+
+        // Create transaction records
+        Transaction senderTx = new Transaction(
+                sender,
+                "TRANSFER_OUT",
+                amount,
+                "SUCCESS",
+                sender.getAccountNumber(),
+                receiver.getAccountNumber(),
+                senderDesc
+        );
+        senderTx = transactionRepository.save(senderTx);
+
+        Transaction receiverTx = new Transaction(
+                receiver,
+                "TRANSFER_IN",
+                amount,
+                "SUCCESS",
+                sender.getAccountNumber(),
+                receiver.getAccountNumber(),
+                receiverDesc
+        );
+        transactionRepository.save(receiverTx);
+
+        LocalDateTime timestamp = senderTx.getCreatedAt() != null ? senderTx.getCreatedAt() : LocalDateTime.now();
+
+        return new TransferResponse(
+                "Transfer successful",
+                senderTx.getId(),
+                sender.getId(),
+                sender.getAccountNumber(),
+                receiver.getId(),
+                receiver.getAccountNumber(),
+                amount,
+                sender.getBalance(),
+                "SUCCESS",
+                timestamp
+        );
+    }
+
+    private Account resolveAccount(Long id, String accountNumber, String role) {
+        if (id != null) {
+            var found = accountRepository.findById(id);
+            if (found.isPresent()) {
+                return found.get();
+            }
+            if (accountNumber != null && !accountNumber.trim().isEmpty()) {
+                return accountRepository.findByAccountNumber(accountNumber.trim())
+                        .orElseThrow(() -> new ResourceNotFoundException(role + " account not found with id: " + id + " or account number: " + accountNumber.trim()));
+            }
+            throw new ResourceNotFoundException(role + " account not found with id: " + id);
+        }
+        if (accountNumber != null && !accountNumber.trim().isEmpty()) {
+            return accountRepository.findByAccountNumber(accountNumber.trim())
+                    .orElseThrow(() -> new ResourceNotFoundException(role + " account not found with account number: " + accountNumber.trim()));
+        }
+        throw new InvalidAmountException(role + " account identifier (ID or account number) is required");
     }
 
     public List<TransactionResponse> getTransactionHistory(Long accountId) {
@@ -147,7 +250,11 @@ public class AccountService {
     }
 
     private void saveTransaction(Account account, String type, BigDecimal amount, String status) {
-        Transaction transaction = new Transaction(account, type, amount, status);
+        saveTransaction(account, type, amount, status, null, null, null);
+    }
+
+    private void saveTransaction(Account account, String type, BigDecimal amount, String status, String senderAccount, String receiverAccount, String description) {
+        Transaction transaction = new Transaction(account, type, amount, status, senderAccount, receiverAccount, description);
         transactionRepository.save(transaction);
     }
 
@@ -170,7 +277,10 @@ public class AccountService {
                 transaction.getType(),
                 transaction.getAmount(),
                 transaction.getStatus(),
-                transaction.getCreatedAt()
+                transaction.getCreatedAt(),
+                transaction.getSenderAccount(),
+                transaction.getReceiverAccount(),
+                transaction.getDescription()
         );
     }
 }

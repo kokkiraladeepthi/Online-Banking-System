@@ -35,6 +35,15 @@ public class Transaction {
     @Column(nullable = false, length = 20)
     private String status;
 
+    @Column(name = "sender_account", length = 30)
+    private String senderAccount;
+
+    @Column(name = "receiver_account", length = 30)
+    private String receiverAccount;
+
+    @Column(length = 255)
+    private String description;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -53,6 +62,16 @@ public class Transaction {
         this.type = type;
         this.amount = amount;
         this.status = status;
+    }
+
+    public Transaction(Account account, String type, BigDecimal amount, String status, String senderAccount, String receiverAccount, String description) {
+        this.account = account;
+        this.type = type;
+        this.amount = amount;
+        this.status = status;
+        this.senderAccount = senderAccount;
+        this.receiverAccount = receiverAccount;
+        this.description = description;
     }
 
     public Long getId() {
@@ -101,5 +120,29 @@ public class Transaction {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getSenderAccount() {
+        return senderAccount;
+    }
+
+    public void setSenderAccount(String senderAccount) {
+        this.senderAccount = senderAccount;
+    }
+
+    public String getReceiverAccount() {
+        return receiverAccount;
+    }
+
+    public void setReceiverAccount(String receiverAccount) {
+        this.receiverAccount = receiverAccount;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
