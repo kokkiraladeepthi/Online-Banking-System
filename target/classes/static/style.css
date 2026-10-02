@@ -450,3 +450,61 @@ input[type="number"]:focus {
 .detail-item.full-span {
     grid-column: 1 / -1;
 }
+
+/* Analytics Styles */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.analytics-card {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+
+.analytics-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.analytics-value {
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.analytics-subrow {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+    font-size: 0.9rem;
+    color: #4b5563;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.text-success { color: #059669; }
+.text-danger { color: #dc2626; }
+.text-purple { color: #7c3aed; }
+.text-info { color: #2563eb; }
+.text-primary { color: #1d4ed8; }
