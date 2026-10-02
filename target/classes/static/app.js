@@ -49,6 +49,12 @@ const depositAmount = document.getElementById('depositAmount');
 const withdrawForm = document.getElementById('withdrawForm');
 const withdrawAmount = document.getElementById('withdrawAmount');
 
+const transferForm = document.getElementById('transferForm');
+const transferFrom = document.getElementById('transferFrom');
+const transferTo = document.getElementById('transferTo');
+const transferAmount = document.getElementById('transferAmount');
+const transferDescription = document.getElementById('transferDescription');
+
 const transactionTableBody = document.getElementById('transactionTableBody');
 
 // Notification banner helpers
@@ -201,6 +207,7 @@ function updateAccountDetailsView(account) {
         detailAccountNumber.textContent = '—';
         detailUserId.textContent = '—';
         detailBalance.textContent = '—';
+        if (transferFrom) transferFrom.value = '';
         return;
     }
 
@@ -211,6 +218,7 @@ function updateAccountDetailsView(account) {
     detailAccountNumber.textContent = account.accountNumber;
     detailUserId.textContent = account.userId !== undefined && account.userId !== null ? account.userId : 'None';
     detailBalance.textContent = formatCurrency(account.balance);
+    if (transferFrom) transferFrom.value = account.accountNumber || account.id;
 }
 
 // 1. Create Account
@@ -384,12 +392,84 @@ withdrawForm.addEventListener('submit', async (e) => {
     }
 });
 
-// 5. Transaction History
+// 5. Fund Transfer
+if (transferForm) {
+    transferForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
+
+        const fromVal = transferFrom.value.trim();
+        const toVal = transferTo.value.trim();
+        const amount = parseFloat(transferAmount.value);
+        const description = transferDescription.value.trim();
+
+        if (!fromVal) {
+            showStatus('Sender account (ID or Number) is required.', 'error');
+            return;
+        }
+        if (!toVal) {
+            showStatus('Receiver account (ID or Number) is required.', 'error');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            showStatus('Transfer amount must be greater than zero.', 'error');
+            return;
+        }
+
+        const payload = {
+            amount: amount,
+            description: description || null
+        };
+
+        if (/^\d+$/.test(fromVal)) {
+            payload.fromAccountId = parseInt(fromVal, 10);
+            payload.fromAccountNumber = fromVal;
+        } else {
+            payload.fromAccountNumber = fromVal;
+        }
+
+        if (/^\d+$/.test(toVal)) {
+            payload.toAccountId = parseInt(toVal, 10);
+            payload.toAccountNumber = toVal;
+        } else {
+            payload.toAccountNumber = toVal;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/transactions/transfer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Transfer failed.');
+            }
+
+            showStatus(`Transfer of ${formatCurrency(amount)} successful! Ref ID: ${data.transactionId}. Sender Balance: ${formatCurrency(data.senderBalance)}`, 'success');
+            transferAmount.value = '';
+            transferDescription.value = '';
+
+            // Reload active account details and transactions
+            if (currentAccountId) {
+                await loadAccountById(currentAccountId);
+            }
+        } catch (error) {
+            showStatus(error.message || 'Transfer transaction failed.', 'error');
+        }
+    });
+}
+
+// 6. Transaction History
 async function loadTransactions(accountId) {
     if (!accountId) {
         transactionTableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="empty-state">No account selected. Create or load an account to view transactions.</td>
+                <td colspan="8" class="empty-state">No account selected. Create or load an account to view transactions.</td>
             </tr>
         `;
         return;
@@ -406,19 +486,26 @@ async function loadTransactions(accountId) {
         if (!Array.isArray(transactions) || transactions.length === 0) {
             transactionTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="empty-state">No transactions recorded for this account.</td>
+                    <td colspan="8" class="empty-state">No transactions recorded for this account.</td>
                 </tr>
             `;
             return;
         }
 
         transactionTableBody.innerHTML = transactions.map(tx => {
-            const typeClass = tx.type === 'DEPOSIT' ? 'DEPOSIT' : 'WITHDRAW';
+            let badgeClass = 'DEPOSIT';
+            if (tx.type === 'WITHDRAW') badgeClass = 'WITHDRAW';
+            else if (tx.type === 'TRANSFER_OUT') badgeClass = 'TRANSFER_OUT';
+            else if (tx.type === 'TRANSFER_IN') badgeClass = 'TRANSFER_IN';
+
             return `
                 <tr>
                     <td>${tx.id}</td>
-                    <td><span class="badge ${typeClass}">${tx.type}</span></td>
+                    <td><span class="badge ${badgeClass}">${tx.type}</span></td>
                     <td>${formatCurrency(tx.amount)}</td>
+                    <td>${tx.senderAccount || '—'}</td>
+                    <td>${tx.receiverAccount || '—'}</td>
+                    <td>${tx.description || '—'}</td>
                     <td><span class="badge SUCCESS">${tx.status}</span></td>
                     <td>${formatDateTime(tx.createdAt)}</td>
                 </tr>
@@ -427,7 +514,7 @@ async function loadTransactions(accountId) {
     } catch (error) {
         transactionTableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="empty-state">Unable to load transaction history: ${error.message}</td>
+                <td colspan="8" class="empty-state">Unable to load transaction history: ${error.message}</td>
             </tr>
         `;
     }

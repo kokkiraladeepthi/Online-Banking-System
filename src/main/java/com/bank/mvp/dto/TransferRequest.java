@@ -2,6 +2,7 @@ package com.bank.mvp.dto;
 
 import java.math.BigDecimal;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
 public class TransferRequest {
@@ -12,6 +13,7 @@ public class TransferRequest {
     private String toAccountNumber;
 
     @NotNull(message = "Amount is required")
+    @DecimalMin(value = "0.01", message = "Transfer amount must be greater than zero")
     private BigDecimal amount;
 
     private String description;

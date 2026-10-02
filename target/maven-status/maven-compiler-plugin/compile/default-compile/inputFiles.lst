@@ -7,6 +7,8 @@ D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\LoginResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\MoneyRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\RegisterUserRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransactionResponse.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransferRequest.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransferResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\UserResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\ApiExceptionHandler.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\InsufficientBalanceException.java
