@@ -12,3 +12,4 @@ public interface AdminLogRepository extends JpaRepository<AdminLog, Long> {
 
     List<AdminLog> findAllByOrderByTimestampDesc();
 }
+

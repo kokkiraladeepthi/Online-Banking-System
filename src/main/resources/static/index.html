@@ -472,6 +472,73 @@
                 </table>
             </div>
         </section>
+
+        <!-- 9. SOAP Account Statement Web Service -->
+        <section class="card full-width">
+            <div class="card-header-row">
+                <h2>9. SOAP Web Service: Account Statement</h2>
+                <div>
+                    <a href="/ws/statement.wsdl" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none; display: inline-block;">View WSDL</a>
+                </div>
+            </div>
+            <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 14px;">
+                Demonstrates XML SOAP 1.1 / Spring-WS integration. Queries the SOAP endpoint at <code>/ws</code> using an XML Envelope.
+            </p>
+
+            <form id="soapStatementForm" class="lookup-inline-form" style="margin-bottom: 16px; display: flex; gap: 8px;">
+                <input type="text" id="soapAccountInput" placeholder="Account ID or Account Number" style="width: 260px;" required>
+                <button type="submit" class="btn btn-primary btn-sm" style="width: auto;">Generate SOAP Statement</button>
+            </form>
+
+            <div id="soapStatementResult" style="display: none;">
+                <div class="details-grid" style="margin-bottom: 16px;">
+                    <div class="detail-item">
+                        <span class="detail-label">Account Number</span>
+                        <span class="detail-value" id="soapResAccountNo">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Account Holder</span>
+                        <span class="detail-value" id="soapResHolder">—</span>
+                    </div>
+                    <div class="detail-item full-span">
+                        <span class="detail-label">Current Balance</span>
+                        <span class="detail-value balance-value" id="soapResBalance">—</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; margin-bottom: 8px; color: #374151;">Statement Transactions</h3>
+                <div class="table-container" style="margin-bottom: 16px;">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="soapTransactionsTableBody">
+                            <tr><td colspan="8" class="empty-state">No transactions in statement.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Raw SOAP XML Accordion -->
+                <details style="margin-top: 10px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <summary style="cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #4b5563;">View Raw SOAP XML Request & Response Envelopes</summary>
+                    <div style="margin-top: 10px;">
+                        <label style="font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 4px;">SOAP Request Envelope (sent to /ws):</label>
+                        <pre id="soapRawRequest" style="background: #1e293b; color: #f8fafc; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem; margin-bottom: 10px;"></pre>
+                        <label style="font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 4px;">SOAP Response Envelope (received from /ws):</label>
+                        <pre id="soapRawResponse" style="background: #1e293b; color: #f8fafc; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;"></pre>
+                    </div>
+                </details>
+            </div>
+        </section>
     </div>
 
     <script src="app.js"></script>

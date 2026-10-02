@@ -116,10 +116,11 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 ## 2. Technology Stack
 
 - **Backend:** Java 17+, Spring Boot 3.3.x, Spring Data JPA, Hibernate, Bean Validation (Jakarta)
+- **Web Services:** Spring-WS (Spring Web Services 4.x), WSDL4J, SAAJ, Jakarta XML Binding (JAXB)
 - **Database:** MySQL 8.x / Embedded H2 (MySQL compatibility mode)
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript (No external frameworks)
 - **Build Tool:** Apache Maven
-- **API Testing:** Postman / cURL / REST Client
+- **API Testing:** Postman / cURL / REST Client / SOAP Client
 
 ---
 
@@ -134,10 +135,11 @@ Provide a functional Minimum Viable Product (MVP) that allows users to:
 7. **Personal Finance Analytics:** Summarizes deposits, withdrawals, transfers sent/received, net savings, and monthly aggregations without heavy external libraries.
 8. **Savings Goals:** Set financial targets with goal names, target amounts, current saved amounts, and automatic completion tracking (`progressPercentage = currentAmount / targetAmount * 100`).
 9. **Admin Module:** Dedicated administrative portal with system-wide KPI statistics, user management, accounts overview, transaction auditing, and tamper-evident activity logging.
-10. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
-11. **Request Validation (`@Valid`):** Strict bean validation on DTOs rejecting null values, blank required strings, negative amounts, zero transaction amounts, and invalid email formats.
-12. **Global Exception Handling (`@RestControllerAdvice`):** Unified error handling translating domain exceptions (`UserNotFoundException`, `AccountNotFoundException`, `InsufficientBalanceException`, `InvalidAmountException`, `DuplicateUserException`, `InvalidAccountException`, `SavingsGoalNotFoundException`) into clear JSON error payloads.
-13. **AOP Logging (`@Aspect`):** Spring AspectJ interceptor monitoring key service operations (registration, login, accounts, deposits, withdrawals, transfers, savings goals, admin) with start/completion/failure execution tracking while sanitizing sensitive credentials.
+10. **SOAP Web Service (Account Statements):** Contract-first SOAP 1.1 Web Service (`/ws`) publishing dynamic WSDL (`/ws/statement.wsdl`) to generate comprehensive account statements by account ID or account number from existing JPA records.
+11. **Frontend Web Interface:** Clean and responsive UI accessible directly at `http://localhost:8080/`.
+12. **Request Validation (`@Valid`):** Strict bean validation on DTOs rejecting null values, blank required strings, negative amounts, zero transaction amounts, and invalid email formats.
+13. **Global Exception Handling (`@RestControllerAdvice`):** Unified error handling translating domain exceptions (`UserNotFoundException`, `AccountNotFoundException`, `InsufficientBalanceException`, `InvalidAmountException`, `DuplicateUserException`, `InvalidAccountException`, `SavingsGoalNotFoundException`) into clear JSON error payloads.
+14. **AOP Logging (`@Aspect`):** Spring AspectJ interceptor monitoring key service operations (registration, login, accounts, deposits, withdrawals, transfers, savings goals, admin) with start/completion/failure execution tracking while sanitizing sensitive credentials.
 
 ---
 
@@ -525,12 +527,61 @@ Base URL: `http://localhost:8080/api`
 - **View All Transactions:** `GET /admin/transactions` (Returns array of system transactions chronologically)
 - **View Activity Logs:** `GET /admin/logs` (Returns audit trail of administrative accesses and operations)
 
+### 5.13 SOAP Web Service (Account Statements)
+- **Endpoint URL:** `POST http://localhost:8080/ws`
+- **WSDL Definition URL:** `GET http://localhost:8080/ws/statement.wsdl`
+- **Target Namespace:** `http://com.bank.mvp/soap/statement`
+- **Protocol:** SOAP 1.1 with SAAJ and Jakarta XML Binding
+- **Request Format (`getStatementRequest`):** Lookup statement by `accountId` OR `accountNumber`:
+  ```xml
+  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                    xmlns:tns="http://com.bank.mvp/soap/statement">
+      <soapenv:Header/>
+      <soapenv:Body>
+          <tns:getStatementRequest>
+              <tns:accountNumber>ACC-ALICE-1</tns:accountNumber>
+          </tns:getStatementRequest>
+      </soapenv:Body>
+  </soapenv:Envelope>
+  ```
+- **Response Format (`getStatementResponse`):**
+  ```xml
+  <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+      <SOAP-ENV:Header/>
+      <SOAP-ENV:Body>
+          <ns2:getStatementResponse xmlns:ns2="http://com.bank.mvp/soap/statement">
+              <ns2:accountNumber>ACC-ALICE-1</ns2:accountNumber>
+              <ns2:accountHolder>Alice Smith</ns2:accountHolder>
+              <ns2:currentBalance>3700.00</ns2:currentBalance>
+              <ns2:transactionDetails>
+                  <ns2:id>3</ns2:id>
+                  <ns2:type>WITHDRAW</ns2:type>
+                  <ns2:amount>300.00</ns2:amount>
+                  <ns2:date>2026-10-03T00:52:45</ns2:date>
+                  <ns2:status>SUCCESS</ns2:status>
+                  <ns2:senderAccount>ACC-ALICE-1</ns2:senderAccount>
+                  <ns2:description>ATM Withdrawal</ns2:description>
+              </ns2:transactionDetails>
+              <ns2:transactionDetails>
+                  <ns2:id>2</ns2:id>
+                  <ns2:type>DEPOSIT</ns2:type>
+                  <ns2:amount>500.00</ns2:amount>
+                  <ns2:date>2026-10-03T00:50:12</ns2:date>
+                  <ns2:status>SUCCESS</ns2:status>
+                  <ns2:receiverAccount>ACC-ALICE-1</ns2:receiverAccount>
+                  <ns2:description>Cash Deposit</ns2:description>
+              </ns2:transactionDetails>
+          </ns2:getStatementResponse>
+      </SOAP-ENV:Body>
+  </SOAP-ENV:Envelope>
+  ```
+
 ---
 
 ## 6. How to Test Using Postman
 
 1. Open **Postman** and create a new collection called `Banking MVP`.
-2. Set the request header `Content-Type: application/json` for all POST and PUT requests.
+2. Set the request header `Content-Type: application/json` for all REST POST/PUT requests, and `Content-Type: text/xml` for SOAP requests.
 
 ### Test Sequence:
 1. **User Registration:**
@@ -612,3 +663,36 @@ Base URL: `http://localhost:8080/api`
     - **List All Accounts:** `GET http://localhost:8080/api/admin/accounts` -> Verify all accounts returned.
     - **List All Transactions:** `GET http://localhost:8080/api/admin/transactions` -> Verify system-wide transaction history.
     - **Audit Activity Logs:** `GET http://localhost:8080/api/admin/logs` -> Verify tamper-evident log records.
+
+13. **SOAP Web Service Account Statement:**
+    - **Inspect WSDL in Browser:**
+      - Open: `http://localhost:8080/ws/statement.wsdl`
+      - Verify the dynamic WSDL XML document is returned with port types, bindings, operations, and schema.
+    - **Test in Postman:**
+      - Method: `POST`
+      - URL: `http://localhost:8080/ws`
+      - Header: `Content-Type: text/xml`
+      - Body (`raw` -> `XML`):
+        ```xml
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                          xmlns:tns="http://com.bank.mvp/soap/statement">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <tns:getStatementRequest>
+                    <tns:accountNumber>ACC-ALICE-1</tns:accountNumber>
+                </tns:getStatementRequest>
+            </soapenv:Body>
+        </soapenv:Envelope>
+        ```
+      - Verify: Returns `200 OK` with full SOAP XML response including account holder name, balance, and complete transaction history.
+    - **Test in Terminal (cURL):**
+      ```bash
+      curl -X POST http://localhost:8080/ws \
+        -H "Content-Type: text/xml;charset=UTF-8" \
+        -d "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tns=\"http://com.bank.mvp/soap/statement\"><soapenv:Header/><soapenv:Body><tns:getStatementRequest><tns:accountId>1</tns:accountId></tns:getStatementRequest></soapenv:Body></soapenv:Envelope>"
+      ```
+    - **Test in Web Browser UI:**
+      - Open: `http://localhost:8080/`
+      - Scroll to **Section 9: SOAP Web Service: Account Statement**
+      - Enter Account ID or Account Number and click **"Fetch Statement (SOAP)"**
+      - See the account holder, balance, transaction table, and expand the raw SOAP XML response viewer.

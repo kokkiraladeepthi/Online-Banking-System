@@ -250,6 +250,8 @@ function updateAccountDetailsView(account) {
     detailUserId.textContent = account.userId !== undefined && account.userId !== null ? account.userId : 'None';
     detailBalance.textContent = formatCurrency(account.balance);
     if (transferFrom) transferFrom.value = account.accountNumber || account.id;
+    const soapAccountInput = document.getElementById('soapAccountInput');
+    if (soapAccountInput) soapAccountInput.value = account.accountNumber || account.id;
 }
 
 // 1. Create Account
@@ -985,5 +987,146 @@ async function loadAdminLogs() {
         tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Error: ${err.message}</td></tr>`;
     }
 }
+
+// 9. SOAP Account Statement Logic
+const soapStatementForm = document.getElementById('soapStatementForm');
+const soapAccountInput = document.getElementById('soapAccountInput');
+const soapStatementResult = document.getElementById('soapStatementResult');
+const soapResAccountNo = document.getElementById('soapResAccountNo');
+const soapResHolder = document.getElementById('soapResHolder');
+const soapResBalance = document.getElementById('soapResBalance');
+const soapTransactionsTableBody = document.getElementById('soapTransactionsTableBody');
+const soapRawRequest = document.getElementById('soapRawRequest');
+const soapRawResponse = document.getElementById('soapRawResponse');
+
+if (soapStatementForm) {
+    soapStatementForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideStatus();
+
+        const inputVal = soapAccountInput.value.trim();
+        if (!inputVal) {
+            showStatus('Please enter an Account ID or Account Number for the SOAP statement.', 'error');
+            return;
+        }
+
+        const isNumeric = /^\d+$/.test(inputVal);
+        const innerElement = isNumeric
+            ? `<tns:accountId>${inputVal}</tns:accountId>`
+            : `<tns:accountNumber>${escapeXml(inputVal)}</tns:accountNumber>`;
+
+        const soapRequestXml = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:tns="http://com.bank.mvp/soap/statement">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <tns:getStatementRequest>
+            ${innerElement}
+        </tns:getStatementRequest>
+    </soapenv:Body>
+</soapenv:Envelope>`;
+
+        if (soapRawRequest) soapRawRequest.textContent = soapRequestXml;
+
+        try {
+            const response = await fetch('/ws', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/xml;charset=UTF-8',
+                    'SOAPAction': ''
+                },
+                body: soapRequestXml
+            });
+
+            const responseText = await response.text();
+            if (soapRawResponse) soapRawResponse.textContent = responseText;
+
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(responseText, 'text/xml');
+
+            const fault = xmlDoc.getElementsByTagName('faultstring')[0]
+                || xmlDoc.getElementsByTagName('SOAP-ENV:faultstring')[0];
+            if (fault) {
+                throw new Error(fault.textContent || 'SOAP Fault returned by server.');
+            }
+
+            const accNoEl = xmlDoc.getElementsByTagName('accountNumber')[0]
+                || xmlDoc.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', 'accountNumber')[0];
+            const holderEl = xmlDoc.getElementsByTagName('accountHolder')[0]
+                || xmlDoc.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', 'accountHolder')[0];
+            const balEl = xmlDoc.getElementsByTagName('currentBalance')[0]
+                || xmlDoc.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', 'currentBalance')[0];
+
+            if (!accNoEl || !holderEl || !balEl) {
+                throw new Error('Invalid SOAP response structure.');
+            }
+
+            soapResAccountNo.textContent = accNoEl.textContent;
+            soapResHolder.textContent = holderEl.textContent;
+            soapResBalance.textContent = formatCurrency(parseFloat(balEl.textContent));
+
+            const txEls = xmlDoc.getElementsByTagName('transactionDetails').length > 0
+                ? xmlDoc.getElementsByTagName('transactionDetails')
+                : xmlDoc.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', 'transactionDetails');
+
+            if (txEls.length === 0) {
+                soapTransactionsTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">No transactions found for this account.</td></tr>`;
+            } else {
+                let rowsHtml = '';
+                for (let i = 0; i < txEls.length; i++) {
+                    const tx = txEls[i];
+                    const id = getXmlVal(tx, 'id');
+                    const type = getXmlVal(tx, 'type');
+                    const amount = parseFloat(getXmlVal(tx, 'amount'));
+                    const status = getXmlVal(tx, 'status');
+                    const date = getXmlVal(tx, 'date');
+                    const sender = getXmlVal(tx, 'senderAccount');
+                    const receiver = getXmlVal(tx, 'receiverAccount');
+                    const desc = getXmlVal(tx, 'description');
+
+                    rowsHtml += `
+                        <tr>
+                            <td>${id}</td>
+                            <td><span class="badge ${type}">${type}</span></td>
+                            <td>${formatCurrency(amount)}</td>
+                            <td><span class="badge ${status}">${status}</span></td>
+                            <td>${formatDateTime(date)}</td>
+                            <td>${sender || '—'}</td>
+                            <td>${receiver || '—'}</td>
+                            <td>${escapeHtml(desc) || '—'}</td>
+                        </tr>
+                    `;
+                }
+                soapTransactionsTableBody.innerHTML = rowsHtml;
+            }
+
+            soapStatementResult.style.display = 'block';
+            showStatus(`SOAP statement generated successfully for Account ${accNoEl.textContent}!`, 'success');
+        } catch (err) {
+            soapStatementResult.style.display = 'none';
+            showStatus('SOAP Error: ' + err.message, 'error');
+        }
+    });
+}
+
+function getXmlVal(parent, tag) {
+    const el = parent.getElementsByTagName(tag)[0]
+        || parent.getElementsByTagNameNS('http://com.bank.mvp/soap/statement', tag)[0];
+    return el ? el.textContent : '';
+}
+
+function escapeXml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe.replace(/[<>&'"]/g, c => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+        }
+    });
+}
+
 
 

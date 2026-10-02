@@ -94,3 +94,4 @@ public class AdminDashboardResponse {
         this.totalSavingsGoals = totalSavingsGoals;
     }
 }
+

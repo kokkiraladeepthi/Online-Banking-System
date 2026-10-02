@@ -208,3 +208,4 @@ class AdminServiceTest {
         assertTrue(logs.stream().anyMatch(l -> "TEST_ACTION".equals(l.getAction())));
     }
 }
+
