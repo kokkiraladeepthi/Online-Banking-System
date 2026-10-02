@@ -1,3 +1,4 @@
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\aspect\LoggingAspect.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\controller\AccountController.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\controller\UserController.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\AccountResponse.java
@@ -6,16 +7,22 @@ D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\LoginRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\LoginResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\MoneyRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\RegisterUserRequest.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\SavingsGoalRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransactionResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransferRequest.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\TransferResponse.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\dto\UserResponse.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\AccountNotFoundException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\ApiExceptionHandler.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\DuplicateUserException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\InsufficientBalanceException.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\InvalidAccountException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\InvalidAmountException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\InvalidCredentialsException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\ResourceNotFoundException.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\SavingsGoalNotFoundException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\UserAlreadyExistsException.java
+D:\Deskpot\BANK\src\main\java\com\bank\mvp\exception\UserNotFoundException.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\model\Account.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\model\Transaction.java
 D:\Deskpot\BANK\src\main\java\com\bank\mvp\model\User.java
